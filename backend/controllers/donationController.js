@@ -65,6 +65,58 @@ export const createDonation = async (req, res) => {
 };
 
 /**
+ * @desc    Get a single donation by ID with populated donor details
+ * @route   GET /api/donations/:id
+ * @access  Private (Donor only)
+ */
+export const getDonationById = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Not authorized. User context is missing.",
+            });
+        }
+
+        const { id } = req.params;
+
+        // Safety Check: Validate ObjectId format before querying
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid donation ID format",
+            });
+        }
+
+        // Query and populate donor details from Users collection
+        const donation = await FoodDonation.findById(id)
+            .populate({
+                path: "donorId",
+                select: "name phone organizationName city email",
+            })
+            .lean();
+
+        // Safety Check: If no record found, return 404
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: donation,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to retrieve donation.",
+        });
+    }
+};
+
+/**
  * @desc    Get all donations for the authenticated donor
  * @route   GET /api/donations/my-donations
  * @access  Private (Donor only)

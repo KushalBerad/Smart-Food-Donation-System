@@ -1,5 +1,5 @@
 import express from "express";
-import { createDonation, getMyDonations } from "../controllers/donationController.js";
+import { createDonation, getDonationById, getMyDonations } from "../controllers/donationController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 import { validateCreateDonation } from "../middleware/donationValidation.js";
 
@@ -18,5 +18,12 @@ router.post("/create", protect, authorize("donor"), validateCreateDonation, crea
  * @access  Private (Donor only)
  */
 router.get("/my-donations", protect, authorize("donor"), getMyDonations);
+
+/**
+ * @route   GET /api/donations/:id
+ * @desc    Get a single donation by ID with populated donor details
+ * @access  Private (Donor only)
+ */
+router.get("/:id", protect, authorize("donor"), getDonationById);
 
 export default router;
