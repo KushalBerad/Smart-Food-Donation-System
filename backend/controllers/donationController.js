@@ -1,14 +1,14 @@
+import mongoose from "mongoose";
 import FoodDonation from "../models/FoodDonation.js";
 import User from "../models/User.js";
 
 /**
  * @desc    Create a new food donation
- * @route   POST /api/donations
+ * @route   POST /api/donations/create
  * @access  Private (Donor only)
  */
 export const createDonation = async (req, res) => {
     try {
-        // 1. Extract authenticated donorId from req.user
         if (!req.user || !req.user.id) {
             return res.status(401).json({
                 success: false,
@@ -18,7 +18,7 @@ export const createDonation = async (req, res) => {
 
         const donorId = req.user.id;
 
-        // 2. Safety Check: Verify that the donorId actually exists in the database
+        // Safety Check: Verify that the donorId actually exists in the database
         const donorExists = await User.findById(donorId);
         if (!donorExists) {
             return res.status(404).json({
@@ -27,7 +27,6 @@ export const createDonation = async (req, res) => {
             });
         }
 
-        // 3. Extract validated and sanitized data from req.body
         const {
             foodName,
             category,
@@ -39,7 +38,6 @@ export const createDonation = async (req, res) => {
             description,
         } = req.body;
 
-        // 4. Insert the document into the FoodDonations collection
         const donation = await FoodDonation.create({
             donorId,
             foodName,
@@ -50,20 +48,78 @@ export const createDonation = async (req, res) => {
             pickupAddress,
             pickupTime,
             description,
-            status: "available", // Default status
+            status: "available",
         });
 
-        // 5. Return successful creation response
         return res.status(201).json({
             success: true,
             message: "Donation created successfully",
             data: donation,
         });
     } catch (error) {
-        // 6. Catch any database connection or write errors and return 500
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to create donation.",
+        });
+    }
+};
+
+/**
+ * @desc    Get all donations for the authenticated donor
+ * @route   GET /api/donations/my-donations
+ * @access  Private (Donor only)
+ */
+export const getMyDonations = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Not authorized. User context is missing.",
+            });
+        }
+
+        const donorId = req.user.id;
+
+        // Safety Check: Validate that donorId is a valid ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(donorId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID format",
+            });
+        }
+
+        // Parse and validate pagination query parameters
+        let page = parseInt(req.query.page, 10);
+        let limit = parseInt(req.query.limit, 10);
+
+        if (isNaN(page) || page < 1) page = 1;
+        if (isNaN(limit) || limit < 1) limit = 10;
+        if (limit > 50) limit = 50;
+
+        const skip = (page - 1) * limit;
+
+        // Run count and query in parallel
+        const [totalCount, donations] = await Promise.all([
+            FoodDonation.countDocuments({ donorId }),
+            FoodDonation.find({ donorId })
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            count: donations.length,
+            totalCount,
+            totalPages: Math.ceil(totalCount / limit),
+            currentPage: page,
+            data: donations,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to retrieve donations.",
         });
     }
 };
