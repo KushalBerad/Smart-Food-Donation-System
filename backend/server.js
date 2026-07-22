@@ -1,5 +1,5 @@
 import dns from 'node:dns/promises';
-dns.setServers(["8.8.8.8", "1.1.1.1"]); 
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 import cors from "cors";
 import dotenv from "dotenv";
@@ -9,11 +9,12 @@ import authRoutes from "./routes/authRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 
 dotenv.config();
-connectDB();
 
 const app = express();
 
-//Middleware 
+connectDB();
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -21,14 +22,22 @@ app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/donations", donationRoutes);
     
-//Test Route
+// Health Check Route
 app.get("/", (req, res) => {
-    res.json({ 
-        message: "Smart Food Donation System"
+    res.status(200).json({
+        success: true,
+        message: "Smart Food Donation System API is running...",
     });
-});  
+});
 
-//Server
+// Handle Unknown Routes
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "Route not found",
+    });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
