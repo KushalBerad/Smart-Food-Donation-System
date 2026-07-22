@@ -22,7 +22,6 @@ app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/donations", donationRoutes);
     
-//Test Route
 // Health Check Route
 app.get("/", (req, res) => {
     res.status(200).json({
@@ -30,9 +29,6 @@ app.get("/", (req, res) => {
         message: "Smart Food Donation System API is running...",
     });
 });
-
-// Authentication Routes
-app.use("/api/auth", authRoutes);
 
 // Handle Unknown Routes
 app.use((req, res) => {
