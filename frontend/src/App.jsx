@@ -1,11 +1,7 @@
-import SignupForm from "./pages/SignupForm.jsx";
+import AppRoutes from "./routes/AppRoutes";
 
 function App() {
-  return (
-    <div>
-      <SignupForm />
-    </div>
-  );
+    return <AppRoutes />;
 }
 
 export default App;
