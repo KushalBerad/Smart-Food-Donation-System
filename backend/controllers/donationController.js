@@ -175,3 +175,76 @@ export const getMyDonations = async (req, res) => {
         });
     }
 };
+
+/**
+ * @desc    Get donor dashboard data including donation summary and active donations
+ * @route   GET /api/donations/dashboard
+ * @access  Private (Donor only)
+ */
+
+export const getDonorDashboard = async (req, res) => {
+    try {
+        const donorId = req.user._id;
+
+        // Get all donations of logged-in donor
+        const donations = await FoodDonation.find({ donorId })
+            .sort({ createdAt: -1 });
+
+        // Active Donations
+        const activeDonations = donations.filter(
+            (donation) =>
+                donation.status === "available" ||
+                donation.status === "requested" ||
+                donation.status === "accepted"
+        );
+
+        // Completed Donations
+        const completedDonations = donations.filter(
+            (donation) => donation.status === "completed"
+        );
+
+        // Today's Pickups
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date();
+        endOfToday.setHours(23, 59, 59, 999);
+
+        const todaysPickups = donations.filter(
+            (donation) =>
+                donation.pickupTime >= startOfToday &&
+                donation.pickupTime <= endOfToday
+        );
+
+        res.status(200).json({
+            success: true,
+            data: {
+                summary: {
+                    activeDonations: activeDonations.length,
+                    pendingRequests: 0,
+                    completedDonations: completedDonations.length,
+                    todaysPickups: todaysPickups.length,
+                },
+
+                myActiveDonations: activeDonations.map((donation) => ({
+                    _id: donation._id,
+                    foodItem: donation.foodName,
+                    quantity: donation.quantity,
+                    pickupBefore: donation.expiryAt,
+                    request:
+                        donation.status === "requested"
+                            ? "Requested"
+                            : "No Request",
+                    status: donation.status,
+                })),
+
+                recentRequests: [],
+            },
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
