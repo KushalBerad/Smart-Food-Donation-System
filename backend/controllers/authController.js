@@ -1,6 +1,6 @@
+import crypto from "crypto";
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
-
 /**
  * @desc    Register a new user
  * @route   POST /api/auth/register
@@ -111,6 +111,115 @@ export const loginUser = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // Validate email
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Email is required",
+            });
+        }
+
+        // Find user
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "No account found with this email",
+            });
+        }
+
+        // Generate secure random token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+
+        // Hash the token before storing
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(resetToken)
+            .digest("hex");
+
+        // Save hashed token and expiry (15 minutes)
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+
+        await user.save();
+
+        // Development response
+        // Later we will email this token instead.
+        return res.status(200).json({
+            success: true,
+            message: "Password reset token generated successfully.",
+            resetToken,
+            expiresIn: "15 minutes",
+        });
+
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+export const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        // Validate password
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: "Password is required",
+            });
+        }
+
+        // Hash the received token
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        // Find matching user whose token hasn't expired
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired reset token",
+            });
+        }
+
+        // Assign plain password.
+        // The pre("save") middleware will hash it automatically.
+        user.password = password;
+
+        // Remove reset token
+        user.resetPasswordToken = null;
+        user.resetPasswordExpires = null;
+
+        await user.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Password reset successful.",
+        });
+
+    } catch (error) {
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
