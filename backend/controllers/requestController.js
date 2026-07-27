@@ -68,6 +68,63 @@ export const getPendingRequests = async (req, res) => {
 };
 
 /**
+ * @desc    Get detailed information of a specific donation request
+ * @route   GET /api/v1/donations/requests/:id
+ * @access  Private (Donor or NGO)
+ */
+export const getRequestDetails = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request ID format",
+            });
+        }
+
+        // Query and populate details
+        const request = await DonationRequest.findById(id)
+            .populate({
+                path: "donationId",
+                select: "foodName quantity preparedAt pickupAddress pickupTime description",
+            })
+            .populate({
+                path: "ngoId",
+                select: "name phone organizationName",
+            })
+            .lean();
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation request not found",
+            });
+        }
+
+        // Security Check: User must be either the donor or the NGO associated with the request
+        if (request.donorId.toString() !== userId && request.ngoId.toString() !== userId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. You are not authorized to view this request.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: request,
+        });
+    } catch (error) {
+        console.error("Error in getRequestDetails:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to retrieve request details.",
+        });
+    }
+};
+
+/**
  * @desc    Accept an NGO donation request
  * @route   PATCH /api/v1/donations/requests/:id/accept
  * @access  Private (Donor only)

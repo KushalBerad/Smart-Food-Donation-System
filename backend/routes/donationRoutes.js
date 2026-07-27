@@ -59,6 +59,13 @@ router.get("/:id", protect, authorize("donor"), getDonationById);
 router.get("/requests", protect, authorize("donor"), getPendingRequests);
 
 /**
+ * @route   GET /api/v1/donations/requests/:id
+ * @desc    Get detailed information of a specific donation request
+ * @access  Private (Donor or NGO)
+ */
+router.get("/requests/:id", protect, getRequestDetails);
+
+/**
  * @route   PATCH /api/v1/donations/requests/:id/accept
  * @desc    Accept an NGO donation request
  * @access  Private (Donor only)
