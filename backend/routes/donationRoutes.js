@@ -6,6 +6,11 @@ import {
     getDonorHistory,
     getDonorHistoryById
 } from "../controllers/donationController.js";
+import { 
+    getPendingRequests, 
+    acceptRequest, 
+    rejectRequest 
+} from "../controllers/requestController.js";
 import { protect, authorize } from "../middleware/authMiddleware.js";
 import { validateCreateDonation } from "../middleware/donationValidation.js";
 
@@ -45,5 +50,26 @@ router.get("/history/:id", protect, authorize("donor"), getDonorHistoryById);
  * @access  Private (Donor only)
  */
 router.get("/:id", protect, authorize("donor"), getDonationById);
+
+/**
+ * @route   GET /api/v1/donations/requests
+ * @desc    Fetch pending donation requests for the authenticated donor
+ * @access  Private (Donor only)
+ */
+router.get("/requests", protect, authorize("donor"), getPendingRequests);
+
+/**
+ * @route   PATCH /api/v1/donations/requests/:id/accept
+ * @desc    Accept an NGO donation request
+ * @access  Private (Donor only)
+ */
+router.patch("/requests/:id/accept", protect, authorize("donor"), acceptRequest);
+
+/**
+ * @route   PATCH /api/v1/donations/requests/:id/reject
+ * @desc    Reject an NGO donation request
+ * @access  Private (Donor only)
+ */
+router.patch("/requests/:id/reject", protect, authorize("donor"), rejectRequest);
 
 export default router;
