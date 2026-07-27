@@ -436,7 +436,7 @@ export const getDonorHistoryById = async (req, res) => {
             });
         }
 
-        // Verify this history record belongs to the authenticated donor
+        // Verify this history record belongs to the authenticated donor 
         if (!historyRecord.donorId || historyRecord.donorId._id.toString() !== donorId) {
             return res.status(404).json({
                 success: false,
