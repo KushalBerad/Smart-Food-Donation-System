@@ -8,6 +8,7 @@ import {
 } from "../controllers/donationController.js";
 import { 
     getPendingRequests, 
+    getRequestDetails, 
     acceptRequest, 
     rejectRequest 
 } from "../controllers/requestController.js";

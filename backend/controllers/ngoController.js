@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import FoodDonation from "../models/FoodDonation.js";
+import DonationRequest from "../models/DonationRequest.js";
 
 /**
  * @desc    Browse all available food donations across the platform (NGO view)
@@ -97,6 +98,94 @@ export const getAvailableDonations = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to retrieve donations.",
+        });
+    }
+};
+
+/**
+ * @desc    Fetch all donation requests made by the authenticated NGO
+ * @route   GET /api/v1/requests/my
+ * @access  Private (NGO only)
+ */
+export const getMyRequests = async (req, res) => {
+    try {
+        // Ensure user is authenticated
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Not authorized. User context is missing.",
+            });
+        }
+
+        const ngoId = req.user.id;
+
+        // Parse and validate pagination query parameters
+        let page = parseInt(req.query.page, 10);
+        let limit = parseInt(req.query.limit, 10);
+
+        if (isNaN(page) || page < 1) page = 1;
+        if (isNaN(limit) || limit < 1) limit = 10;
+        if (limit > 50) limit = 50;
+
+        const skip = (page - 1) * limit;
+
+        // Build filter: only requests belonging to this NGO
+        const filter = { ngoId };
+
+        // Optional status filter
+        const { status } = req.query;
+        if (status) {
+            filter.status = status;
+        }
+
+        // Run count and query in parallel
+        const [totalCount, requests] = await Promise.all([
+            DonationRequest.countDocuments(filter),
+            DonationRequest.find(filter)
+                .populate({
+                    path: "donationId",
+                    select: "foodName quantity preparedAt expiryAt pickupAddress",
+                })
+                .populate({
+                    path: "donorId",
+                    select: "name organizationName phone",
+                })
+                .sort({ requestedAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+        ]);
+
+        // Map to the required response shape
+        const formattedRequests = requests.map((req) => ({
+            _id: req._id,
+            requestedQuantity: req.requestedQuantity,
+            status: req.status,
+            requestedAt: req.requestedAt,
+            donation: {
+                _id: req.donationId?._id || null,
+                foodName: req.donationId?.foodName || "Unknown",
+                pickupAddress: req.donationId?.pickupAddress || "Unknown",
+            },
+            donor: {
+                _id: req.donorId?._id || null,
+                organizationName: req.donorId?.organizationName || req.donorId?.name || "Unknown",
+                phone: req.donorId?.phone || "Unknown",
+            },
+        }));
+
+        return res.status(200).json({
+            success: true,
+            requests: formattedRequests,
+            totalCount,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+        });
+    } catch (error) {
+        console.error("Error in getMyRequests:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to retrieve requests.",
         });
     }
 };

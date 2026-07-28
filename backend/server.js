@@ -8,6 +8,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import donationRoutes from "./routes/donationRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
+import requestRoutes from "./routes/requestRoutes.js";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/donations", donationRoutes);
 app.use("/api/v1/ngo", ngoRoutes);
+app.use("/api/v1/requests", requestRoutes);
     
 // Health Check Route
 app.get("/", (req, res) => {
