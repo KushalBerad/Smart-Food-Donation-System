@@ -8,7 +8,6 @@ import {
 } from "../controllers/donationController.js";
 import { 
     getPendingRequests, 
-    getRequestDetails, 
     acceptRequest, 
     rejectRequest 
 } from "../controllers/requestController.js";
@@ -58,13 +57,6 @@ router.get("/:id", protect, authorize("donor"), getDonationById);
  * @access  Private (Donor only)
  */
 router.get("/requests", protect, authorize("donor"), getPendingRequests);
-
-/**
- * @route   GET /api/v1/donations/requests/:id
- * @desc    Get detailed information of a specific donation request
- * @access  Private (Donor or NGO)
- */
-router.get("/requests/:id", protect, getRequestDetails);
 
 /**
  * @route   PATCH /api/v1/donations/requests/:id/accept
