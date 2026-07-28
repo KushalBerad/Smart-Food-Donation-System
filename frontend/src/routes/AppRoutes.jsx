@@ -3,7 +3,10 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
-import Dashboard from "../pages/dashboard/Dashboard";
+import Dashboard from "../pages/donor/Dashboard";
+import DashboardLayout from "../layouts/DashboardLayout";
+import CreateDonation from "../pages/donor/CreateDonation";
+
 
 function AppRoutes() {
     return (
@@ -31,8 +34,21 @@ function AppRoutes() {
 
                 <Route
                     path="/dashboard"
-                    element={<Dashboard />}
+                     element={
+                             <DashboardLayout>
+                              <Dashboard />
+                            </DashboardLayout>
+                            }
                 />
+                 <Route
+                    path="/create-donation"
+                     element={
+                             <DashboardLayout>
+                             <CreateDonation />
+                            </DashboardLayout>
+                             }
+                 />
+                
 
                 <Route
                     path="*"
