@@ -79,6 +79,26 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: false,
         },
+
+        // User Preferences & Settings
+        notificationPreference: {
+            type: Boolean,
+            default: true,
+        },
+        emailPreference: {
+            type: Boolean,
+            default: true,
+        },
+        theme: {
+            type: String,
+            enum: ["light", "dark"],
+            default: "light",
+        },
+        language: {
+            type: String,
+            enum: ["English", "Spanish", "French", "Hindi", "Other"],
+            default: "English",
+        },
     },
     {
         timestamps: true,
