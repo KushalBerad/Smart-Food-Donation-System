@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import NGOProfile from "../models/NGOProfile.js";
 import FoodDonation from "../models/FoodDonation.js";
+import DonationHistory from "../models/DonationHistory.js";
+import Notification from "../models/Notification.js";
 import DonationRequest from "../models/DonationRequest.js";
 
 /**
@@ -317,6 +319,310 @@ export const updateNGOProfile = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to update NGO profile.",
+        });
+    }
+};
+
+/**
+ * @desc    Get NGO dashboard statistics + recent data
+ * @route   GET /api/v1/ngo/dashboard
+ * @access  Private (NGO only)
+ */
+export const getNGODashboardStats = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Not authorized. User context is missing.",
+            });
+        }
+
+        const ngoId = req.user.id;
+
+        // Run all stat queries + recent data in parallel
+        const [
+            availableDonationsCount,
+            myRequestsCount,
+            acceptedRequestsCount,
+            completedPickupsCount,
+            recentDonations,
+            recentRequests,
+            user,
+        ] = await Promise.all([
+            // Stat 1: Available donations platform-wide
+            FoodDonation.countDocuments({ status: "available" }),
+
+            // Stat 2: Total requests submitted by this NGO
+            DonationRequest.countDocuments({ ngoId }),
+
+            // Stat 3: Accepted requests for this NGO
+            DonationRequest.countDocuments({ ngoId, status: "accepted" }),
+
+            // Stat 4: Completed pickups for this NGO
+            DonationRequest.countDocuments({ ngoId, pickupConfirmed: true }),
+
+            // Recent available donations (top 4)
+            FoodDonation.find({ status: "available" })
+                .populate({
+                    path: "donorId",
+                    select: "organizationName name city",
+                })
+                .sort({ createdAt: -1 })
+                .limit(4)
+                .lean(),
+
+            // Recent requests by this NGO (top 3)
+            DonationRequest.find({ ngoId })
+                .populate({
+                    path: "donationId",
+                    select: "foodName pickupAddress pickupTime",
+                })
+                .populate({
+                    path: "donorId",
+                    select: "organizationName name",
+                })
+                .sort({ requestedAt: -1 })
+                .limit(3)
+                .lean(),
+
+            // User details for welcome message
+            User.findById(ngoId).select("name organizationName registrationNumber").lean(),
+        ]);
+
+        // Format recent donations
+        const formattedDonations = recentDonations.map((d) => ({
+            _id: d._id,
+            foodName: d.foodName,
+            quantity: d.quantity,
+            expiryAt: d.expiryAt,
+            pickupAddress: d.pickupAddress,
+            donor: {
+                _id: d.donorId?._id || null,
+                organizationName: d.donorId?.organizationName || d.donorId?.name || "Unknown",
+                city: d.donorId?.city || "Unknown",
+            },
+        }));
+
+        // Format recent requests
+        const formattedRequests = recentRequests.map((r) => ({
+            _id: r._id,
+            status: r.status,
+            requestedAt: r.requestedAt,
+            pickupConfirmed: r.pickupConfirmed,
+            respondedAt: r.respondedAt,
+            donation: {
+                _id: r.donationId?._id || null,
+                foodName: r.donationId?.foodName || "Unknown",
+                pickupTime: r.donationId?.pickupTime || null,
+            },
+            donor: {
+                _id: r.donorId?._id || null,
+                organizationName: r.donorId?.organizationName || r.donorId?.name || "Unknown",
+            },
+        }));
+
+        return res.status(200).json({
+            success: true,
+            stats: {
+                availableDonations: availableDonationsCount,
+                myRequests: myRequestsCount,
+                acceptedRequests: acceptedRequestsCount,
+                completedPickups: completedPickupsCount,
+            },
+            recentDonations: formattedDonations,
+            recentRequests: formattedRequests,
+            ngo: {
+                name: user?.organizationName || user?.name || "NGO",
+                registrationNumber: user?.registrationNumber || "",
+            },
+        });
+    } catch (error) {
+        console.error("Error in getNGODashboardStats:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to retrieve dashboard stats.",
+        });
+    }
+};
+
+/**
+ * @desc    Create a donation request (NGO requests a food donation)
+ * @route   POST /api/v1/ngo/request
+ * @access  Private (NGO only)
+ */
+export const createDonationRequest = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Not authorized. User context is missing.",
+            });
+        }
+
+        const ngoId = req.user.id;
+        const { donationId, requestedQuantity, message } = req.body;
+
+        // Validate donationId
+        if (!donationId || !mongoose.Types.ObjectId.isValid(donationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Valid donation ID is required.",
+            });
+        }
+
+        if (!requestedQuantity || !requestedQuantity.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Requested quantity is required.",
+            });
+        }
+
+        // Verify donation exists and is available
+        const donation = await FoodDonation.findById(donationId).lean();
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found.",
+            });
+        }
+
+        if (donation.status !== "available") {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot request donation with status '${donation.status}'. It must be 'available'.`,
+            });
+        }
+
+        // Check if NGO already has a pending request for this donation
+        const existingRequest = await DonationRequest.findOne({
+            donationId,
+            ngoId,
+            status: "pending",
+        }).lean();
+
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: "You already have a pending request for this donation.",
+            });
+        }
+
+        // Create the donation request
+        const donationRequest = await DonationRequest.create({
+            donationId,
+            donorId: donation.donorId,
+            ngoId,
+            requestedQuantity: requestedQuantity.trim(),
+            message: message?.trim() || "",
+            status: "pending",
+        });
+
+        // Update donation status to 'requested'
+        await FoodDonation.findByIdAndUpdate(donationId, {
+            status: "requested",
+        });
+
+        // Notify the donor
+        await Notification.create({
+            userId: donation.donorId,
+            type: "request",
+            title: "New Donation Request",
+            message: `An NGO has requested your donation "${donation.foodName}".`,
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "Donation request submitted successfully.",
+            data: donationRequest,
+        });
+    } catch (error) {
+        console.error("Error in createDonationRequest:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to create donation request.",
+        });
+    }
+};
+
+/**
+ * @desc    Get NGO history (completed/cancelled pickups)
+ * @route   GET /api/v1/ngo/history
+ * @access  Private (NGO only)
+ */
+export const getNGOHistory = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: "Not authorized. User context is missing.",
+            });
+        }
+
+        const ngoId = req.user.id;
+
+        // Parse pagination
+        let page = parseInt(req.query.page, 10);
+        let limit = parseInt(req.query.limit, 10);
+        if (isNaN(page) || page < 1) page = 1;
+        if (isNaN(limit) || limit < 1) limit = 10;
+        if (limit > 50) limit = 50;
+        const skip = (page - 1) * limit;
+
+        // Filter for this NGO's history
+        const filter = { ngoId };
+
+        // Optional status filter
+        const { status } = req.query;
+        if (status) {
+            filter.finalStatus = status;
+        }
+
+        const [totalCount, historyRecords] = await Promise.all([
+            DonationHistory.countDocuments(filter),
+            DonationHistory.find(filter)
+                .populate({
+                    path: "donationId",
+                    select: "foodName category quantity pickupAddress pickupTime expiryAt",
+                })
+                .populate({
+                    path: "donorId",
+                    select: "name organizationName city phone",
+                })
+                .populate({
+                    path: "requestId",
+                    select: "requestedQuantity message status requestedAt respondedAt",
+                })
+                .sort({ completedAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .lean(),
+        ]);
+
+        const formattedHistory = historyRecords.map((record) => ({
+            _id: record._id,
+            foodName: record.donationId?.foodName || "Unknown Food",
+            donorName: record.donorId?.organizationName || record.donorId?.name || "Unknown",
+            donorCity: record.donorId?.city || "Unknown",
+            finalStatus: record.finalStatus,
+            completedAt: record.completedAt,
+            quantity: record.donationId?.quantity || "Unknown",
+            rating: record.rating,
+            feedback: record.feedback,
+        }));
+
+        return res.status(200).json({
+            success: true,
+            history: formattedHistory,
+            totalCount,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+        });
+    } catch (error) {
+        console.error("Error in getNGOHistory:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to retrieve NGO history.",
         });
     }
 };

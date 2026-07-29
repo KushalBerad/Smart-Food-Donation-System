@@ -7,6 +7,13 @@ import Dashboard from "../pages/donor/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import CreateDonation from "../pages/donor/CreateDonation";
 
+import NGODashboard from "../pages/ngo/Dashboard";
+import BrowseDonations from "../pages/ngo/BrowseDonations";
+import MyRequests from "../pages/ngo/MyRequests";
+import NGOHistory from "../pages/ngo/History";
+import NGOProfile from "../pages/ngo/Profile";
+import NGODashboardLayout from "../layouts/NGODashboardLayout";
+
 
 function AppRoutes() {
     return (
@@ -32,6 +39,7 @@ function AppRoutes() {
                     element={<ForgotPassword />}
                 />
 
+                {/* Donor Routes */}
                 <Route
                     path="/dashboard"
                      element={
@@ -48,7 +56,48 @@ function AppRoutes() {
                             </DashboardLayout>
                              }
                  />
-                
+
+                {/* NGO Routes */}
+                <Route
+                    path="/ngo/dashboard"
+                    element={
+                        <NGODashboardLayout>
+                            <NGODashboard />
+                        </NGODashboardLayout>
+                    }
+                />
+                <Route
+                    path="/ngo/browse"
+                    element={
+                        <NGODashboardLayout>
+                            <BrowseDonations />
+                        </NGODashboardLayout>
+                    }
+                />
+                <Route
+                    path="/ngo/requests"
+                    element={
+                        <NGODashboardLayout>
+                            <MyRequests />
+                        </NGODashboardLayout>
+                    }
+                />
+                <Route
+                    path="/ngo/history"
+                    element={
+                        <NGODashboardLayout>
+                            <NGOHistory />
+                        </NGODashboardLayout>
+                    }
+                />
+                <Route
+                    path="/ngo/profile"
+                    element={
+                        <NGODashboardLayout>
+                            <NGOProfile />
+                        </NGODashboardLayout>
+                    }
+                />
 
                 <Route
                     path="*"
