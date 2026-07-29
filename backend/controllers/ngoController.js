@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import User from "../models/User.js";
+import NGOProfile from "../models/NGOProfile.js";
 import FoodDonation from "../models/FoodDonation.js";
 import DonationRequest from "../models/DonationRequest.js";
 
@@ -186,6 +188,135 @@ export const getMyRequests = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to retrieve requests.",
+        });
+    }
+};
+
+/**
+ * @desc    Fetch authenticated NGO's profile (User + NGOProfile merged)
+ * @route   GET /api/v1/ngo/profile
+ * @access  Private (NGO only)
+ */
+export const getNGOProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Fetch User and NGOProfile in parallel
+        const [user, ngoProfile] = await Promise.all([
+            User.findById(userId).select("-password").lean(),
+            NGOProfile.findOne({ userId }).lean(),
+        ]);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+        // Merge data from User and NGOProfile models
+        const profileData = {
+            organizationName: ngoProfile?.ngoName || user.organizationName || "",
+            registrationNumber: ngoProfile?.registrationNumber || user.registrationNumber || "",
+            contactPerson: user.name || "",
+            phone: user.phone || "",
+            email: user.email || "",
+            city: ngoProfile?.city || user.city || "",
+            address: ngoProfile?.address || "",
+            verificationStatus: ngoProfile?.verificationStatus || "pending",
+            verificationDocument: user.verificationDocument || "",
+            updatedAt: ngoProfile?.updatedAt || user.updatedAt,
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: "NGO Profile fetched successfully",
+            data: profileData,
+        });
+    } catch (error) {
+        console.error("Error in getNGOProfile:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to fetch NGO profile.",
+        });
+    }
+};
+
+/**
+ * @desc    Update authenticated NGO's profile (User + NGOProfile merged)
+ * @route   PUT /api/v1/ngo/profile
+ * @access  Private (NGO only)
+ */
+export const updateNGOProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const {
+            organizationName,
+            registrationNumber,
+            contactPerson,
+            phone,
+            email,
+            city,
+            address,
+            verificationDocument,
+        } = req.body;
+
+        // Update fields on User model
+        const userUpdateFields = {};
+        if (contactPerson !== undefined) userUpdateFields.name = contactPerson;
+        if (phone !== undefined) userUpdateFields.phone = phone;
+        if (email !== undefined) userUpdateFields.email = email;
+        if (verificationDocument !== undefined) userUpdateFields.verificationDocument = verificationDocument;
+
+        if (Object.keys(userUpdateFields).length > 0) {
+            await User.findByIdAndUpdate(userId, userUpdateFields, { runValidators: true });
+        }
+
+        // Update fields on NGOProfile model (upsert if doesn't exist)
+        const ngoUpdateFields = {};
+        if (organizationName !== undefined) ngoUpdateFields.ngoName = organizationName;
+        if (registrationNumber !== undefined) ngoUpdateFields.registrationNumber = registrationNumber;
+        if (city !== undefined) ngoUpdateFields.city = city;
+        if (address !== undefined) ngoUpdateFields.address = address;
+
+        if (Object.keys(ngoUpdateFields).length > 0) {
+            await NGOProfile.findOneAndUpdate(
+                { userId },
+                ngoUpdateFields,
+                { upsert: true, runValidators: true, new: true }
+            );
+        }
+
+        // Fetch updated data and return merged profile
+        const [updatedUser, updatedNgoProfile] = await Promise.all([
+            User.findById(userId).select("-password").lean(),
+            NGOProfile.findOne({ userId }).lean(),
+        ]);
+
+        const profileData = {
+            organizationName: updatedNgoProfile?.ngoName || updatedUser.organizationName || "",
+            registrationNumber: updatedNgoProfile?.registrationNumber || updatedUser.registrationNumber || "",
+            contactPerson: updatedUser.name || "",
+            phone: updatedUser.phone || "",
+            email: updatedUser.email || "",
+            city: updatedNgoProfile?.city || updatedUser.city || "",
+            address: updatedNgoProfile?.address || "",
+            verificationStatus: updatedNgoProfile?.verificationStatus || "pending",
+            verificationDocument: updatedUser.verificationDocument || "",
+            updatedAt: updatedNgoProfile?.updatedAt || updatedUser.updatedAt,
+        };
+
+        return res.status(200).json({
+            success: true,
+            message: "NGO Profile updated successfully",
+            data: profileData,
+        });
+    } catch (error) {
+        console.error("Error in updateNGOProfile:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to update NGO profile.",
         });
     }
 };

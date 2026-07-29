@@ -339,6 +339,91 @@ export const getDonorHistory = async (req, res) => {
 };
 
 /**
+ * @desc    Complete a donation workflow (Donor marks donation as finished)
+ * @route   PATCH /api/v1/donations/:id/complete
+ * @access  Private (Donor only)
+ */
+export const completeDonation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const donorId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid donation ID format",
+            });
+        }
+
+        // Verify donation belongs to the authenticated donor
+        const donation = await FoodDonation.findOne({ _id: id, donorId }).lean();
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found or access denied",
+            });
+        }
+
+        if (donation.status !== "accepted") {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot complete donation with status '${donation.status}'. It must be 'accepted'.`,
+            });
+        }
+
+        // Find the associated accepted donation request for this donation
+        const donationRequest = await DonationRequest.findOne({
+            donationId: id,
+            status: "accepted",
+        }).lean();
+
+        if (!donationRequest) {
+            return res.status(400).json({
+                success: false,
+                message: "No accepted donation request found for this donation.",
+            });
+        }
+
+        // 1. Update FoodDonation status to 'completed'
+        await FoodDonation.findByIdAndUpdate(id, { status: "completed" });
+
+        // 2. Update DonationRequest status to 'completed'
+        await DonationRequest.findByIdAndUpdate(donationRequest._id, {
+            status: "completed",
+        });
+
+        // 3. Create a record in DonationHistory
+        await DonationHistory.create({
+            requestId: donationRequest._id,
+            donationId: id,
+            donorId: donorId,
+            ngoId: donationRequest.ngoId,
+            finalStatus: "completed",
+            completedAt: new Date(),
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Donation completed successfully.",
+            data: {
+                donationId: id,
+                requestId: donationRequest._id,
+                pickupStatus: "Picked Up",
+                completionStatus: "Completed",
+                completedAt: new Date(),
+            },
+        });
+    } catch (error) {
+        console.error("Error in completeDonation:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to complete donation workflow.",
+        });
+    }
+};
+
+/**
  * @desc    Get single history item details
  * @route   GET /api/v1/donations/history/:id
  * @access  Private (Donor only)
