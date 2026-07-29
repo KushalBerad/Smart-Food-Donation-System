@@ -4,7 +4,8 @@ import {
     getDonationById, 
     getMyDonations,
     getDonorHistory,
-    getDonorHistoryById
+    getDonorHistoryById,
+    completeDonation
 } from "../controllers/donationController.js";
 import { 
     getPendingRequests, 
@@ -71,5 +72,12 @@ router.patch("/requests/:id/accept", protect, authorize("donor"), acceptRequest)
  * @access  Private (Donor only)
  */
 router.patch("/requests/:id/reject", protect, authorize("donor"), rejectRequest);
+
+/**
+ * @route   PATCH /api/v1/donations/:id/complete
+ * @desc    Complete a donation workflow (Donor marks donation as finished)
+ * @access  Private (Donor only)
+ */
+router.patch("/:id/complete", protect, authorize("donor"), completeDonation);
 
 export default router;

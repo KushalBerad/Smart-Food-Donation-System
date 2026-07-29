@@ -195,6 +195,72 @@ export const acceptRequest = async (req, res) => {
 };
 
 /**
+ * @desc    Confirm pickup of a donation by NGO
+ * @route   PATCH /api/v1/requests/:id/pickup
+ * @access  Private (NGO only)
+ */
+export const confirmPickup = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const ngoId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request ID format",
+            });
+        }
+
+        // Find request and ensure it belongs to the authenticated NGO
+        const request = await DonationRequest.findById(id).lean();
+
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation request not found",
+            });
+        }
+
+        if (request.ngoId.toString() !== ngoId) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied. This request does not belong to your NGO.",
+            });
+        }
+
+        if (request.status !== "accepted") {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot confirm pickup for request with status '${request.status}'. It must be 'accepted'.`,
+            });
+        }
+
+        // Update pickup confirmation
+        const updatedRequest = await DonationRequest.findByIdAndUpdate(
+            id,
+            { pickupConfirmed: true },
+            { new: true }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Pickup confirmed successfully.",
+            data: {
+                donationId: request.donationId,
+                requestId: request._id,
+                pickupStatus: "Picked Up",
+            },
+        });
+    } catch (error) {
+        console.error("Error in confirmPickup:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error. Failed to confirm pickup.",
+        });
+    }
+};
+
+/**
  * @desc    Reject an NGO donation request
  * @route   PATCH /api/v1/donations/requests/:id/reject
  * @access  Private (Donor only)
