@@ -33,9 +33,23 @@ export default function Navbar({ onMenuClick }) {
     }
   })();
 
+  const isNGO = user.role === "ngo";
+
+  const profilePath = isNGO
+    ? "/ngo/profile"
+    : "/profile";
+
+  const settingsPath = isNGO
+    ? "/ngo/settings"
+    : "/settings";
+
+  const dashboardPath = isNGO
+    ? "/ngo/dashboard"
+    : "/dashboard";
+
   // Go to Home
   const handleLogoClick = () => {
-    navigate("/");
+    navigate(dashboardPath);
   };
 
   const handleLogout = () => {
@@ -197,7 +211,7 @@ export default function Navbar({ onMenuClick }) {
               {/* Profile */}
               <button
                 onClick={() => {
-                  navigate("/profile");
+                  navigate(profilePath);
                   setIsProfileOpen(false);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
@@ -209,7 +223,7 @@ export default function Navbar({ onMenuClick }) {
               {/* Settings */}
               <button
                 onClick={() => {
-                  navigate("/settings");
+                  navigate(settingsPath);
                   setIsProfileOpen(false);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"

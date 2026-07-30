@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
-import User from "../models/User.js";
-import NGOProfile from "../models/NGOProfile.js";
-import FoodDonation from "../models/FoodDonation.js";
 import DonationHistory from "../models/DonationHistory.js";
-import Notification from "../models/Notification.js";
 import DonationRequest from "../models/DonationRequest.js";
+import FoodDonation from "../models/FoodDonation.js";
+import NGOProfile from "../models/NGOProfile.js";
+import Notification from "../models/Notification.js";
+import User from "../models/User.js";
 
 /**
  * @desc    Browse all available food donations across the platform (NGO view)
@@ -283,10 +283,18 @@ export const updateNGOProfile = async (req, res) => {
         if (address !== undefined) ngoUpdateFields.address = address;
 
         if (Object.keys(ngoUpdateFields).length > 0) {
+
+            ngoUpdateFields.userId = userId;
+
             await NGOProfile.findOneAndUpdate(
                 { userId },
-                ngoUpdateFields,
-                { upsert: true, runValidators: true, new: true }
+                { $set: ngoUpdateFields },
+                {
+                    upsert: true,
+                    runValidators: true,
+                    new: true,
+                    setDefaultsOnInsert: true,
+                }
             );
         }
 

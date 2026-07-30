@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
+import DonationHistory from "../models/DonationHistory.js";
+import DonationRequest from "../models/DonationRequest.js";
 import FoodDonation from "../models/FoodDonation.js";
 import User from "../models/User.js";
-import DonationRequest from "../models/DonationRequest.js";
-import DonationHistory from "../models/DonationHistory.js";
 
 /**
  * @desc    Create a new food donation
@@ -420,6 +420,118 @@ export const completeDonation = async (req, res) => {
             success: false,
             message: "Internal server error. Failed to complete donation workflow.",
         });
+    }
+};
+
+/**
+ * @desc    Get current donation status
+ * @route   GET /api/v1/donations/:id/status
+ * @access  Private (Donor & NGO)
+ */
+export const getDonationStatus = async (req, res) => {
+    try {
+        const donation = await FoodDonation.findById(req.params.id);
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Donation status retrieved successfully.",
+            data: {
+                donationId: donation._id,
+                status: donation.status,
+                updatedAt: donation.updatedAt,
+            },
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
+    }
+};
+
+
+/**
+ * @desc    Update donation status
+ * @route   PATCH /api/v1/donations/:id/status
+ * @access  Private (Donor)
+ */
+export const updateDonationStatus = async (req, res) => {
+    try {
+
+        const { status } = req.body;
+
+        const allowedStatuses = [
+            "available",
+            "requested",
+            "accepted",
+            "completed",
+            "expired",
+            "cancelled",
+        ];
+
+        if (!allowedStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid donation status.",
+            });
+        }
+
+        const donation = await FoodDonation.findById(req.params.id);
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found.",
+            });
+        }
+
+        // Owner check
+        if (donation.donorId.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized.",
+            });
+        }
+
+        // Prevent changing completed donation
+        if (donation.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "Completed donation cannot be updated.",
+            });
+        }
+
+        donation.status = status;
+
+        await donation.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Donation status updated successfully.",
+            data: {
+                donationId: donation._id,
+                status: donation.status,
+                updatedAt: donation.updatedAt,
+            },
+        });
+
+    } catch (error) {
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+
     }
 };
 

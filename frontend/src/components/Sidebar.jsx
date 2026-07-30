@@ -1,4 +1,5 @@
 import {
+  BarChart,
   Heart,
   History,
   LayoutDashboard,
@@ -18,6 +19,7 @@ const menuItems = [
   { label: "Requests", icon: Users, path: "/requests" },
   { label: "History", icon: History, path: "/history" },
   { label: "Profile", icon: User, path: "/profile" },
+  { label: "Reports & Impact", icon: BarChart, path: "/reports"},
   { label: "Help & Support", icon: Heart, path: "/help-support" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
@@ -37,7 +39,7 @@ export default function Sidebar({
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    navigate("/login");
+    navigate("/auth/login", { replace: true });
   };
 
   return (

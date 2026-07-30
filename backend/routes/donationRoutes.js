@@ -1,18 +1,20 @@
 import express from "express";
-import { 
-    createDonation, 
-    getDonationById, 
-    getMyDonations,
+import {
+    completeDonation,
+    createDonation,
+    getDonationById,
+    getDonationStatus,
     getDonorHistory,
     getDonorHistoryById,
-    completeDonation
+    getMyDonations,
+    updateDonationStatus
 } from "../controllers/donationController.js";
-import { 
-    getPendingRequests, 
-    acceptRequest, 
-    rejectRequest 
+import {
+    acceptRequest,
+    getPendingRequests,
+    rejectRequest
 } from "../controllers/requestController.js";
-import { protect, authorize } from "../middleware/authMiddleware.js";
+import { authorize, protect } from "../middleware/authMiddleware.js";
 import { validateCreateDonation } from "../middleware/donationValidation.js";
 
 const router = express.Router();
@@ -50,7 +52,19 @@ router.get("/history/:id", protect, authorize("donor"), getDonorHistoryById);
  * @desc    Get a single donation by ID with populated donor details
  * @access  Private (Donor only)
  */
-router.get("/:id", protect, authorize("donor"), getDonationById);
+router.get("/:id", protect, authorize("donor", "ngo"), getDonationById);
+
+/**
+ * @route   GET /api/v1/donations/:id/status
+ * @desc    Get current donation status
+ * @access  Private (Donor & NGO)
+ */
+router.get(
+    "/:id/status",
+    protect,
+    authorize("donor", "ngo"),
+    getDonationStatus
+);
 
 /**
  * @route   GET /api/v1/donations/requests
@@ -79,5 +93,17 @@ router.patch("/requests/:id/reject", protect, authorize("donor"), rejectRequest)
  * @access  Private (Donor only)
  */
 router.patch("/:id/complete", protect, authorize("donor"), completeDonation);
+
+/**
+ * @route   PATCH /api/v1/donations/:id/status
+ * @desc    Update donation status
+ * @access  Private (Donor)
+ */
+router.patch(
+    "/:id/status",
+    protect,
+    authorize("donor"),
+    updateDonationStatus
+);
 
 export default router;

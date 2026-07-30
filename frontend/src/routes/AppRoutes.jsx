@@ -11,13 +11,21 @@ import Register from "../pages/auth/Register";
 import CreateDonation from "../pages/donor/CreateDonation";
 import Dashboard from "../pages/donor/Dashboard";
 import MyDonations from "../pages/donor/MyDonations";
+import Reports from "../pages/donor/Reports";
 
 // NGO Pages
 import BrowseDonations from "../pages/ngo/BrowseDonations";
 import NGODashboard from "../pages/ngo/Dashboard";
+import DonationDetails from "../pages/ngo/DonationDetails";
 import NGOHistory from "../pages/ngo/History";
 import MyRequests from "../pages/ngo/MyRequests";
 import NGOProfile from "../pages/ngo/Profile";
+import NGOReports from "../pages/ngo/Reports";
+import RequestDetails from "../pages/ngo/RequestDetails";
+
+//Shared Pages
+import HelpSupport from "../pages/shared/HelpSupport";
+import Settings from "../pages/shared/Settings";
 
 function AppRoutes() {
     return (
@@ -73,6 +81,33 @@ function AppRoutes() {
                     }
                 />
 
+                <Route
+                    path="/reports"
+                    element={
+                        <DashboardLayout>
+                            <Reports />
+                        </DashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/help-support"
+                    element={
+                        <DashboardLayout>
+                            <HelpSupport />
+                        </DashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/settings"
+                    element={
+                        <DashboardLayout>
+                            <Settings />
+                        </DashboardLayout>
+                    }
+                />
+
                 {/* ================= NGO ================= */}
 
                 <Route
@@ -116,6 +151,51 @@ function AppRoutes() {
                     element={
                         <NGODashboardLayout>
                             <NGOProfile />
+                        </NGODashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/ngo/reports"
+                    element={
+                        <NGODashboardLayout>
+                            <NGOReports />
+                        </NGODashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/ngo/donation/:id"
+                    element={
+                        <NGODashboardLayout>
+                            <DonationDetails />
+                        </NGODashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/ngo/requests/:id"
+                    element={
+                        <NGODashboardLayout>
+                            <RequestDetails />
+                        </NGODashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/ngo/help-support"
+                    element={
+                        <NGODashboardLayout>
+                            <HelpSupport />
+                        </NGODashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/ngo/settings"
+                    element={
+                        <NGODashboardLayout>
+                            <Settings />
                         </NGODashboardLayout>
                     }
                 />

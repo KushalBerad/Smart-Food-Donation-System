@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import DonationRequest from "../models/DonationRequest.js";
 import FoodDonation from "../models/FoodDonation.js";
 import Notification from "../models/Notification.js";
-import User from "../models/User.js";
 
 /**
  * @desc    Fetch pending donation requests for the authenticated donor
@@ -28,9 +27,9 @@ export const getPendingRequests = async (req, res) => {
 
         // Filter by donorId and status 'pending' (unless other status is provided)
         const statusFilter = req.query.status || "pending";
-        const filter = { 
-            donorId, 
-            status: statusFilter 
+        const filter = {
+            donorId,
+            status: statusFilter
         };
 
         const [totalCount, requests] = await Promise.all([
@@ -104,7 +103,15 @@ export const getRequestDetails = async (req, res) => {
         }
 
         // Security Check: User must be either the donor or the NGO associated with the request
-        if (request.donorId.toString() !== userId && request.ngoId.toString() !== userId) {
+        const ngoId =
+            request.ngoId?._id
+                ? request.ngoId._id.toString()
+                : request.ngoId.toString();
+
+        if (
+            request.donorId.toString() !== userId &&
+            ngoId !== userId
+        ) {
             return res.status(403).json({
                 success: false,
                 message: "Access denied. You are not authorized to view this request.",
@@ -160,16 +167,16 @@ export const acceptRequest = async (req, res) => {
         // 1. Update DonationRequest status
         const updatedRequest = await DonationRequest.findByIdAndUpdate(
             id,
-            { 
-                status: "accepted", 
-                respondedAt: new Date() 
+            {
+                status: "accepted",
+                respondedAt: new Date()
             },
             { new: true }
         );
 
         // 2. Update associated FoodDonation status to 'accepted'
-        await FoodDonation.findByIdAndUpdate(request.donationId, { 
-            status: "accepted" 
+        await FoodDonation.findByIdAndUpdate(request.donationId, {
+            status: "accepted"
         });
 
         // 3. Notify the NGO
@@ -296,9 +303,9 @@ export const rejectRequest = async (req, res) => {
         // 1. Update DonationRequest status
         const updatedRequest = await DonationRequest.findByIdAndUpdate(
             id,
-            { 
-                status: "rejected", 
-                respondedAt: new Date() 
+            {
+                status: "rejected",
+                respondedAt: new Date()
             },
             { new: true }
         );
@@ -312,8 +319,8 @@ export const rejectRequest = async (req, res) => {
 
         // If no other pending requests, set food status back to 'available'
         if (otherPendingRequests === 0) {
-            await FoodDonation.findByIdAndUpdate(request.donationId, { 
-                status: "available" 
+            await FoodDonation.findByIdAndUpdate(request.donationId, {
+                status: "available"
             });
         }
 

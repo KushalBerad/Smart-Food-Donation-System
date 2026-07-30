@@ -41,3 +41,15 @@ export const updateNGOProfile = async (payload) => {
     const response = await api.put("/ngo/profile", payload);
     return response.data;
 };
+
+//Get Donation Details
+export const getDonationDetails = async (id) => {
+    const response = await api.get(`/donations/${id}`);
+    return response.data;
+};
+
+// Get Request Details
+export const getRequestDetails = async (id) => {
+    const response = await api.get(`/requests/${id}`);
+    return response.data;
+};

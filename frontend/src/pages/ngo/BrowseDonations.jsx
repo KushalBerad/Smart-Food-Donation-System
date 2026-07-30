@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  Search,
-  Package,
-  ChevronRight,
-  Loader2,
   Filter,
+  Loader2,
+  Package,
+  Search
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getAvailableDonations } from "../../services/ngoService";
 
 function formatDate(dateStr) {
@@ -138,7 +137,10 @@ export default function BrowseDonations() {
                       <td className="py-3.5 text-gray-600">{d.donor?.city}</td>
                       <td className="py-3.5 text-gray-600">{formatDate(d.expiryAt)}</td>
                       <td className="py-3.5 text-right pr-2">
-                        <button className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <button
+                          onClick={() => navigate(`/ngo/donation/${d._id}`)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                        >
                           View Details
                         </button>
                       </td>

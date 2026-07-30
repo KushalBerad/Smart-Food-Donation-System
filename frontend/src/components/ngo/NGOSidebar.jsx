@@ -1,20 +1,33 @@
-import { useNavigate, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Search,
-  ClipboardList,
-  History,
-  User,
-  LogOut,
+  BarChart3,
   Building2,
+  ClipboardList,
+  Heart,
+  History,
+  LayoutDashboard,
+  LogOut,
+  Search,
+  Settings,
+  User,
 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/ngo/dashboard" },
+
   { label: "Browse Donations", icon: Search, path: "/ngo/browse" },
+
   { label: "My Requests", icon: ClipboardList, path: "/ngo/requests" },
+
   { label: "History", icon: History, path: "/ngo/history" },
+
   { label: "Profile", icon: User, path: "/ngo/profile" },
+
+  { label: "Reports & Impact", icon: BarChart3, path: "/ngo/reports" },
+
+  { label: "Help & Support", icon: Heart, path: "/ngo/help-support" },
+
+  { label: "Settings", icon: Settings, path: "/ngo/settings" },
 ];
 
 export default function NGOSidebar({ isOpen, onClose }) {
@@ -71,10 +84,9 @@ export default function NGOSidebar({ isOpen, onClose }) {
                   key={label}
                   onClick={() => handleNavigation(path)}
                   className={`relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-xl text-sm font-medium
-                    ${
-                      active
-                        ? "bg-[#16A34A]/10 text-[#16A34A]"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                    ${active
+                      ? "bg-[#16A34A]/10 text-[#16A34A]"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                     }`}
                 >
                   <Icon size={18} />

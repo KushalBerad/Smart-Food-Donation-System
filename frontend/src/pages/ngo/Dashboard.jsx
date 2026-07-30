@@ -1,13 +1,13 @@
+import {
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Loader2,
+  Package,
+  Truck,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Package,
-  ClipboardList,
-  CheckCircle2,
-  Truck,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
 import { getDashboardStats } from "../../services/ngoService";
 
 const colorMap = {
@@ -273,7 +273,7 @@ export default function NGODashboard() {
                     <td className="py-3.5 text-right pr-2">
                       <button
                         onClick={() =>
-                          navigate(`/ngo/browse?id=${donation._id}`)
+                          navigate(`/ngo/donation/${donation._id}`)
                         }
                         className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all"
                       >

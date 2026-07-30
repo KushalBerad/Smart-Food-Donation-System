@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { ClipboardList, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { getMyRequests } from "../../services/ngoService";
 
 const statusBadge = {
@@ -23,6 +23,7 @@ export default function MyRequests() {
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const navigate = useNavigate();
 
   const fetchRequests = async () => {
     try {
@@ -103,7 +104,10 @@ export default function MyRequests() {
                         </span>
                       </td>
                       <td className="py-3.5 text-right pr-2">
-                        <button className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                        <button
+                          onClick={() => navigate(`/ngo/requests/${req._id}`)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                        >
                           View Details
                         </button>
                       </td>
