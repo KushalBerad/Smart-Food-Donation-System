@@ -1,14 +1,14 @@
+import {
+  Bell,
+  ChevronDown,
+  LogOut,
+  Menu,
+  Settings,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import foodDonationIcon from "../assets/food_donation_icon.png";
-import {
-  Menu,
-  Bell,
-  ChevronDown,
-  User,
-  Settings,
-  LogOut,
-} from "lucide-react";
 
 export default function Navbar({ onMenuClick }) {
   const navigate = useNavigate();
@@ -16,21 +16,21 @@ export default function Navbar({ onMenuClick }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Demo user
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-  };
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   // Go to Home
   const handleLogoClick = () => {
     navigate("/");
   };
 
-  // Demo Logout
   const handleLogout = () => {
-    alert("Demo: Logout clicked!");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
     setIsProfileOpen(false);
+    setIsNotificationOpen(false);
+
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -56,23 +56,23 @@ export default function Navbar({ onMenuClick }) {
         >
           {/* Logo */}
           <div className="w-22 h-10 flex items-center justify-center shrink-0 ">
-           <img
-             src={foodDonationIcon}
-             alt="Food Donation Logo"
-             className="w-22 h-22 object-contain"
+            <img
+              src={foodDonationIcon}
+              alt="Food Donation Logo"
+              className="w-22 h-22 object-contain"
             />
           </div>
 
           {/* Website Name */}
           <div className="leading-tight mr-2">
-    <h1 className="text-sm sm:text-base font-semibold text-gray-900">
-      FoodRescue
-    </h1>
+            <h1 className="text-sm sm:text-base font-semibold text-gray-900">
+              FoodRescue
+            </h1>
 
-    <p className="hidden sm:block text-xs text-gray-500">
-      Share Food, Help People
-    </p>
-  </div>
+            <p className="hidden sm:block text-xs text-gray-500">
+              Share Food, Help People
+            </p>
+          </div>
         </button>
       </div>
 
@@ -92,13 +92,14 @@ export default function Navbar({ onMenuClick }) {
           >
             <Bell size={20} />
 
-            {/* Demo Notification Count */}
+            {/* TODO: Replace with unread notification count from backend */}
             <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
               3
             </span>
           </button>
 
           {/* Notification Dropdown */}
+          {/* TODO: Render notifications dynamically */}
           {isNotificationOpen && (
             <div className="absolute right-0 top-10 w-72 max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg z-50">
 
@@ -153,14 +154,13 @@ export default function Navbar({ onMenuClick }) {
             {/* User Name
                 Hidden on small mobile screens */}
             <span className="hidden sm:block text-sm text-gray-800 font-medium">
-              {user.name}
+              {user?.name || "Donor"}
             </span>
 
             <ChevronDown
               size={16}
-              className={`text-gray-500 transition-transform ${
-                isProfileOpen ? "rotate-180" : ""
-              }`}
+              className={`text-gray-500 transition-transform ${isProfileOpen ? "rotate-180" : ""
+                }`}
             />
           </button>
 
@@ -171,18 +171,18 @@ export default function Navbar({ onMenuClick }) {
               {/* User Info */}
               <div className="px-4 py-3 border-b border-gray-200">
                 <p className="text-sm font-semibold text-gray-900">
-                  {user.name}
+                  {user?.name || "Donor"}
                 </p>
 
                 <p className="text-xs text-gray-500 truncate">
-                  {user.email}
+                  {user?.email || ""}
                 </p>
               </div>
 
               {/* Profile */}
               <button
                 onClick={() => {
-                  alert("Demo: Profile clicked!");
+                  navigate("/profile");
                   setIsProfileOpen(false);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
@@ -194,7 +194,7 @@ export default function Navbar({ onMenuClick }) {
               {/* Settings */}
               <button
                 onClick={() => {
-                  alert("Demo: Settings clicked!");
+                  navigate("/settings");
                   setIsProfileOpen(false);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"

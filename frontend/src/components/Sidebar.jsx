@@ -1,13 +1,15 @@
-import { useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  PlusCircle,
-  Package,
-  Users,
+  Heart,
   History,
-  User,
+  LayoutDashboard,
   LogOut,
+  Package,
+  PlusCircle,
+  Settings,
+  User,
+  Users,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const menuItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
@@ -16,6 +18,8 @@ const menuItems = [
   { label: "Requests", icon: Users, path: "/requests" },
   { label: "History", icon: History, path: "/history" },
   { label: "Profile", icon: User, path: "/profile" },
+  { label: "Help & Support", icon: Heart, path: "/help-support" },
+  { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
 export default function Sidebar({
@@ -28,6 +32,12 @@ export default function Sidebar({
   const handleNavigation = (path) => {
     navigate(path);
     onClose?.();
+  };
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    navigate("/login");
   };
 
   return (
@@ -56,10 +66,9 @@ export default function Sidebar({
                   key={label}
                   onClick={() => handleNavigation(path)}
                   className={`relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-xl text-sm font-medium
-                    ${
-                      active
-                        ? "bg-[#16A34A]/10 text-[#16A34A]"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                    ${active
+                      ? "bg-[#16A34A]/10 text-[#16A34A]"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                     }`}
                 >
                   <Icon size={18} />
@@ -73,9 +82,10 @@ export default function Sidebar({
         {/* Bottom Logout */}
         <div className="p-3 border-t border-gray-100">
           <button
+            onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl
-            text-sm font-medium text-gray-500
-            hover:bg-red-50 hover:text-red-500 transition-colors"
+  text-sm font-medium text-gray-500
+  hover:bg-red-50 hover:text-red-500 transition-colors"
           >
             <LogOut size={18} />
             Logout
