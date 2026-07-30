@@ -10,6 +10,7 @@ import donationRoutes from "./routes/donationRoutes.js";
 import ngoRoutes from "./routes/ngoRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import settingsRoutes from "./routes/settingsRoutes.js";
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use("/api/v1/donations", donationRoutes);
 app.use("/api/v1/ngo", ngoRoutes);
 app.use("/api/v1/requests", requestRoutes);
 app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/settings", settingsRoutes);
     
 // Health Check Route
 app.get("/", (req, res) => {
