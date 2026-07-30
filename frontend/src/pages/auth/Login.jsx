@@ -99,7 +99,12 @@ export default function Login() {
                 JSON.stringify(response.data)
             );
 
-            navigate("/dashboard");
+            // Role-based redirect
+            if (response.data.role === "ngo") {
+                navigate("/ngo/dashboard");
+            } else {
+                navigate("/dashboard");
+            }
 
         } catch (error) {
             setServerError(

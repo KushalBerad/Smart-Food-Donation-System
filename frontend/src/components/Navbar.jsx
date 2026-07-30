@@ -16,20 +16,29 @@ export default function Navbar({ onMenuClick }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  // Demo user
-  const user = {
-    name: "John Doe",
-    email: "john@example.com",
-  };
+  // Get user from localStorage
+  const user = (() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("user") || "{}");
+      return {
+        name: stored.organizationName || stored.name || "User",
+        email: stored.email || "",
+      };
+    } catch {
+      return { name: "User", email: "" };
+    }
+  })();
 
   // Go to Home
   const handleLogoClick = () => {
     navigate("/");
   };
 
-  // Demo Logout
+  // Logout
   const handleLogout = () => {
-    alert("Demo: Logout clicked!");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/auth/login");
     setIsProfileOpen(false);
   };
 
