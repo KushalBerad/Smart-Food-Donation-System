@@ -103,7 +103,16 @@ export default function SignupForm() {
         throw new Error(response.message || "Registration failed");
       }
 
-      setSubmitted(true);
+      // Auto-login: store token and user data
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.data));
+
+      // Redirect to role-specific dashboard
+      if (response.data.role === "ngo") {
+        navigate("/ngo/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (error) {
       setServerError(
         error.response?.data?.message ||

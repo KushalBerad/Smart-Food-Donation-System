@@ -16,7 +16,22 @@ export default function Navbar({ onMenuClick }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const user = (() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("user") || "{}");
+
+      return {
+        ...stored,
+        name: stored.organizationName || stored.name || "User",
+        email: stored.email || "",
+      };
+    } catch {
+      return {
+        name: "User",
+        email: "",
+      };
+    }
+  })();
 
   // Go to Home
   const handleLogoClick = () => {
@@ -30,7 +45,7 @@ export default function Navbar({ onMenuClick }) {
     setIsProfileOpen(false);
     setIsNotificationOpen(false);
 
-    navigate("/login", { replace: true });
+    navigate("/auth/login", { replace: true });
   };
 
   return (
