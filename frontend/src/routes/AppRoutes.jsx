@@ -6,6 +6,10 @@ import Register from "../pages/auth/Register";
 import Dashboard from "../pages/donor/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import CreateDonation from "../pages/donor/CreateDonation";
+import MyDonations from "../pages/donor/MyDonations";
+import ManageRequests from "../pages/donor/ManageRequests";
+import DonorHistory from "../pages/donor/DonorHistory";
+import Profile from "../pages/donor/Profile";
 
 import NGODashboard from "../pages/ngo/Dashboard";
 import BrowseDonations from "../pages/ngo/BrowseDonations";
@@ -21,7 +25,7 @@ function AppRoutes() {
             <Routes>
                 <Route
                     path="/"
-                    element={<Navigate to="/auth/login" replace />}
+                    element={<Navigate to="/home" replace />}
                 />
 
                 <Route
@@ -56,6 +60,36 @@ function AppRoutes() {
                             </DashboardLayout>
                              }
                  />
+                 <Route
+                    path="/my-donations"
+                     element={
+                            <DashboardLayout>
+                            <MyDonations />
+                            </DashboardLayout>
+                             }
+                />
+                <Route
+                     path="/requests"
+                      element={
+                        <DashboardLayout>
+                        <ManageRequests />
+                        </DashboardLayout>
+                    }
+                />
+                 <Route
+                    path="/history"
+                     element={
+                             <DashboardLayout>
+                             <DonorHistory />
+                            </DashboardLayout>
+                             }
+                 />
+                <Route path="/profile" 
+                        element={
+                             <DashboardLayout>
+                             <Profile />
+                            </DashboardLayout>} 
+                />
 
                 {/* NGO Routes */}
                 <Route
