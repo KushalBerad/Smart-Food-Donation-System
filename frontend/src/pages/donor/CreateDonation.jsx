@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createDonation } from "../../services/donationService";
 
 export default function CreateDonation() {
   const [form, setForm] = useState({
@@ -17,10 +18,58 @@ export default function CreateDonation() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Donation submitted:", form);
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const donationData = {
+      foodName: form.foodName,
+      category: form.foodType,
+      quantity: form.quantity,
+
+      preparedAt: new Date(
+        `${form.preparedDate}T${form.preparedTime}`
+      ).toISOString(),
+
+      expiryAt: new Date(
+        new Date(`${form.preparedDate}T${form.preparedTime}`).getTime() +
+        24 * 60 * 60 * 1000
+      ).toISOString(),
+
+      pickupAddress: form.pickupAddress,
+
+      pickupTime: new Date(
+        `${form.pickupDate}T${form.pickupTime}`
+      ).toISOString(),
+
+      description: form.notes,
+    };
+
+    const res = await createDonation(donationData);
+
+    console.log("Donation Created:", res);
+
+    alert("Donation Created Successfully!");
+
+    setForm({
+      foodName: "",
+      foodType: "",
+      quantity: "",
+      preparedDate: "",
+      preparedTime: "",
+      pickupAddress: "",
+      pickupDate: "",
+      pickupTime: "",
+      notes: "",
+    });
+  } catch (err) {
+    console.error(err);
+
+    alert(
+      err.response?.data?.message || "Failed to create donation"
+    );
+  }
+};
 
   const inputClass =
     "w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition";

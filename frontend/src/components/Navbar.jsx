@@ -189,13 +189,13 @@ export default function Navbar({ onMenuClick }) {
               </div>
 
               {/* Profile */}
-              <button
-                onClick={() => {
-                  alert("Demo: Profile clicked!");
-                  setIsProfileOpen(false);
+             <button
+               onClick={() => {
+                 navigate("/profile");
+                 setIsProfileOpen(false);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-              >
+>
                 <User size={17} />
                 Profile
               </button>
