@@ -6,6 +6,7 @@ import Register from "../pages/auth/Register";
 import Dashboard from "../pages/donor/Dashboard";
 import DashboardLayout from "../layouts/DashboardLayout";
 import CreateDonation from "../pages/donor/CreateDonation";
+import DonorHistory from "../pages/donor/DonorHistory";
 
 
 function AppRoutes() {
@@ -45,6 +46,14 @@ function AppRoutes() {
                      element={
                              <DashboardLayout>
                              <CreateDonation />
+                            </DashboardLayout>
+                             }
+                 />
+                 <Route
+                    path="/history"
+                     element={
+                             <DashboardLayout>
+                             <DonorHistory />
                             </DashboardLayout>
                              }
                  />
