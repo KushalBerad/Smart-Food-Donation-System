@@ -26,6 +26,7 @@ import {
   TEXT_MUTED,
 } from "../../utils/constants";
 import { validateRegisterForm } from "../../utils/validators";
+import { registerUser } from "../../services/authService";
 
 export default function SignupForm() {
   const [role, setRole] = useState("donor");
@@ -34,6 +35,8 @@ export default function SignupForm() {
   const [errors, setErrors] = useState({});
   const [fileName, setFileName] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState("");
 
   const config = FIELD_CONFIG[role];
   const navigate = useNavigate();
@@ -41,6 +44,7 @@ export default function SignupForm() {
   const handleChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+    if (serverError) setServerError("");
   };
 
   const handleFileChange = (name, file) => {
@@ -52,11 +56,71 @@ export default function SignupForm() {
     setShowPassword((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const handleSubmit = () => {
+  const buildPayload = (currentRole, currentFormData) => {
+    if (currentRole === "donor") {
+      return {
+        name: currentFormData.fullName,
+        email: currentFormData.email,
+        password: currentFormData.password,
+        phone: currentFormData.phone,
+        role: "donor",
+        city: currentFormData.city,
+        organizationName: currentFormData.orgName || "",
+        registrationNumber: "",
+        verificationDocument: "",
+      };
+    }
+
+    return {
+      name: currentFormData.contactPerson || currentFormData.ngoName,
+      email: currentFormData.email,
+      password: currentFormData.password,
+      phone: currentFormData.phone,
+      role: "ngo",
+      city: currentFormData.city,
+      organizationName: currentFormData.ngoName || "",
+      registrationNumber: currentFormData.regNumber || "",
+      verificationDocument: currentFormData.verificationDoc || "",
+    };
+  };
+
+  const handleSubmit = async () => {
     const newErrors = validateRegisterForm(config, formData);
     setErrors(newErrors);
-    if (Object.keys(newErrors).length === 0) {
-      setSubmitted(true);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setServerError("");
+
+      const payload = buildPayload(role, formData);
+      const response = await registerUser(payload);
+
+      if (!response.success) {
+        throw new Error(response.message || "Registration failed");
+      }
+
+      // Auto-login: store token and user data
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(response.data));
+
+      // Redirect to role-specific dashboard
+      if (response.data.role === "ngo") {
+        navigate("/ngo/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      setServerError(
+        error.response?.data?.message ||
+          error.message ||
+          "Registration failed"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -66,6 +130,7 @@ export default function SignupForm() {
     setErrors({});
     setFileName("");
     setSubmitted(false);
+    setServerError("");
   };
 
   const gradientStyle = { backgroundImage: `linear-gradient(135deg, ${GREEN}, ${GREEN_DARK})` };
@@ -155,6 +220,12 @@ export default function SignupForm() {
         <p className="text-center text-[13px] mb-6" style={{ color: TEXT_MUTED }}>{config.subtitle}</p>
 
         {/* Form — rendered entirely from the shared field config */}
+        {serverError && (
+          <div className="mb-3.5 rounded-lg border border-red-500 bg-red-100 px-3 py-2 text-sm text-red-700">
+            {serverError}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3.5 mb-3.5">
           {config.fields.map((field) => {
             const Icon = field.icon;
@@ -256,9 +327,10 @@ export default function SignupForm() {
 
         <AuthButton
           onClick={handleSubmit}
+          disabled={loading}
           style={gradientStyle}
         >
-          Create Account
+          {loading ? "Creating account..." : "Create Account"}
         </AuthButton>
 
         <div className="text-center text-[13px] mt-4" style={{ color: TEXT_MUTED }}>
