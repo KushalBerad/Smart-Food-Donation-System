@@ -3,6 +3,7 @@ import FoodDonation from "../models/FoodDonation.js";
 import User from "../models/User.js";
 import DonationRequest from "../models/DonationRequest.js";
 import DonationHistory from "../models/DonationHistory.js";
+import DonorProfile from "../models/DonorProfile.js";
 
 /**
  * @desc    Create a new food donation
@@ -134,7 +135,6 @@ export const getMyDonations = async (req, res) => {
 
         const donorId = req.user.id;
 
-        // Safety Check: Validate that donorId is a valid ObjectId format
         if (!mongoose.Types.ObjectId.isValid(donorId)) {
             return res.status(400).json({
                 success: false,
@@ -142,7 +142,6 @@ export const getMyDonations = async (req, res) => {
             });
         }
 
-        // Parse and validate pagination query parameters
         let page = parseInt(req.query.page, 10);
         let limit = parseInt(req.query.limit, 10);
 
@@ -152,10 +151,19 @@ export const getMyDonations = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Run count and query in parallel
+        // Filter object
+        const filter = { donorId };
+
+        // Status filter
+        const { status } = req.query;
+
+        if (status && status !== "" && status !== "all") {
+            filter.status = status;
+        }
+
         const [totalCount, donations] = await Promise.all([
-            FoodDonation.countDocuments({ donorId }),
-            FoodDonation.find({ donorId })
+            FoodDonation.countDocuments(filter),
+            FoodDonation.find(filter)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
@@ -170,7 +178,10 @@ export const getMyDonations = async (req, res) => {
             currentPage: page,
             data: donations,
         });
+
     } catch (error) {
+        console.error("Error in getMyDonations:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to retrieve donations.",
@@ -561,3 +572,4 @@ export const getDonorHistoryById = async (req, res) => {
         });
     }
 };
+

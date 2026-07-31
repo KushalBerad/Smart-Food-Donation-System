@@ -11,6 +11,7 @@ import ngoRoutes from "./routes/ngoRoutes.js";
 import requestRoutes from "./routes/requestRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import donorRoutes from "./routes/donorRoutes.js";
 
 dotenv.config();
 
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/donations", donationRoutes);
 app.use("/api/v1/ngo", ngoRoutes);
+app.use("/api/v1/donor", donorRoutes);
 app.use("/api/v1/requests", requestRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/settings", settingsRoutes);
