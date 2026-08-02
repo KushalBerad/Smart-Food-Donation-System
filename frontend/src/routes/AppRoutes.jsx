@@ -12,6 +12,8 @@ import CreateDonation from "../pages/donor/CreateDonation";
 import Dashboard from "../pages/donor/Dashboard";
 import MyDonations from "../pages/donor/MyDonations";
 import Reports from "../pages/donor/Reports";
+import DonorRequestDetails from "../pages/donor/RequestDetails";
+import Requests from "../pages/donor/Requests";
 
 // NGO Pages
 import BrowseDonations from "../pages/ngo/BrowseDonations";
@@ -21,7 +23,7 @@ import NGOHistory from "../pages/ngo/History";
 import MyRequests from "../pages/ngo/MyRequests";
 import NGOProfile from "../pages/ngo/Profile";
 import NGOReports from "../pages/ngo/Reports";
-import RequestDetails from "../pages/ngo/RequestDetails";
+import NGORequestDetails from "../pages/ngo/RequestDetails";
 
 //Shared Pages
 import HelpSupport from "../pages/shared/HelpSupport";
@@ -77,6 +79,24 @@ function AppRoutes() {
                     element={
                         <DashboardLayout>
                             <MyDonations />
+                        </DashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/requests"
+                    element={
+                        <DashboardLayout>
+                            <Requests />
+                        </DashboardLayout>
+                    }
+                />
+
+                <Route
+                    path="/requests/:id"
+                    element={
+                        <DashboardLayout>
+                            <DonorRequestDetails />
                         </DashboardLayout>
                     }
                 />
@@ -177,7 +197,7 @@ function AppRoutes() {
                     path="/ngo/requests/:id"
                     element={
                         <NGODashboardLayout>
-                            <RequestDetails />
+                            <NGORequestDetails />
                         </NGODashboardLayout>
                     }
                 />

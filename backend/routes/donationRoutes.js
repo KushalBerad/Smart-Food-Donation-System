@@ -12,6 +12,7 @@ import {
 import {
     acceptRequest,
     getPendingRequests,
+    getRequestDetails,
     rejectRequest
 } from "../controllers/requestController.js";
 import { authorize, protect } from "../middleware/authMiddleware.js";
@@ -48,6 +49,29 @@ router.get("/history", protect, authorize("donor"), getDonorHistory);
 router.get("/history/:id", protect, authorize("donor"), getDonorHistoryById);
 
 /**
+ * @route   GET /api/v1/donations/requests
+ * @desc    Fetch pending donation requests for the authenticated donor
+ * @access  Private (Donor only)
+ */
+router.get("/requests", protect, authorize("donor"), getPendingRequests);
+
+router.get("/requests/:id", protect, authorize("donor"), getRequestDetails);
+
+/**
+ * @route   PATCH /api/v1/donations/requests/:id/accept
+ * @desc    Accept an NGO donation request
+ * @access  Private (Donor only)
+ */
+router.patch("/requests/:id/accept", protect, authorize("donor"), acceptRequest);
+
+/**
+ * @route   PATCH /api/v1/donations/requests/:id/reject
+ * @desc    Reject an NGO donation request
+ * @access  Private (Donor only)
+ */
+router.patch("/requests/:id/reject", protect, authorize("donor"), rejectRequest);
+
+/**
  * @route   GET /api/v1/donations/:id
  * @desc    Get a single donation by ID with populated donor details
  * @access  Private (Donor only)
@@ -65,27 +89,6 @@ router.get(
     authorize("donor", "ngo"),
     getDonationStatus
 );
-
-/**
- * @route   GET /api/v1/donations/requests
- * @desc    Fetch pending donation requests for the authenticated donor
- * @access  Private (Donor only)
- */
-router.get("/requests", protect, authorize("donor"), getPendingRequests);
-
-/**
- * @route   PATCH /api/v1/donations/requests/:id/accept
- * @desc    Accept an NGO donation request
- * @access  Private (Donor only)
- */
-router.patch("/requests/:id/accept", protect, authorize("donor"), acceptRequest);
-
-/**
- * @route   PATCH /api/v1/donations/requests/:id/reject
- * @desc    Reject an NGO donation request
- * @access  Private (Donor only)
- */
-router.patch("/requests/:id/reject", protect, authorize("donor"), rejectRequest);
 
 /**
  * @route   PATCH /api/v1/donations/:id/complete
