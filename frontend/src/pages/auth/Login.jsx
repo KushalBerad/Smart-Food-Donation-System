@@ -85,7 +85,7 @@ export default function Login() {
             setServerError("");
 
             const response = await loginUser({
-                email: formData.email,
+                email: formData.email.trim().toLowerCase(),
                 password: formData.password,
             });
 
@@ -101,9 +101,9 @@ export default function Login() {
 
             // Role-based redirect
             if (response.data.role === "ngo") {
-                navigate("/ngo/dashboard");
+                navigate("/ngo/dashboard", { replace: true });
             } else {
-                navigate("/dashboard");
+                navigate("/dashboard", { replace: true });
             }
 
         } catch (error) {

@@ -7,7 +7,7 @@ export default function CreateDonation() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
+  const initialForm = {
     foodName: "",
     foodType: "",
     quantity: "",
@@ -17,12 +17,19 @@ export default function CreateDonation() {
     pickupDate: "",
     pickupTime: "",
     notes: "",
-  });
-
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const [form, setForm] = useState(initialForm);
+
+  const handleChange = ({ target }) => {
+    const { name, value } = target;
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+  if (loading) return;
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -39,23 +46,11 @@ export default function CreateDonation() {
         description: form.notes,
       };
 
-      console.log("Payload:", payload);
-
       const response = await api.post("/donations/create", payload);
 
       alert(response.data.message || "Donation created successfully.");
 
-      setForm({
-        foodName: "",
-        foodType: "",
-        quantity: "",
-        preparedDate: "",
-        preparedTime: "",
-        pickupAddress: "",
-        pickupDate: "",
-        pickupTime: "",
-        notes: "",
-      });
+      setForm(initialForm);
 
       navigate("/dashboard");
     } catch (error) {
@@ -90,6 +85,7 @@ export default function CreateDonation() {
 
         {/* Form */}
         <form
+          autocomplete="off"
           onSubmit={handleSubmit}
           className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5 sm:p-6 space-y-4"
         >
@@ -126,8 +122,8 @@ export default function CreateDonation() {
               <option value="">Select food type</option>
               <option value="veg">Vegetarian</option>
               <option value="non-veg">Non-Vegetarian</option>
-              <option value="other">Bakery</option>
-              <option value="other">Packaged Food</option>
+              <option value="bakery">Bakery</option>
+              <option value="packaged">Packaged Food</option>
               <option value="other">Other</option>
             </select>
           </div>
@@ -241,9 +237,16 @@ export default function CreateDonation() {
             <button
               disabled={loading}
               type="submit"
-              className="w-full sm:w-auto px-8 py-2.5 rounded-lg bg-green-600 text-white font-medium text-sm hover:bg-green-700 active:bg-green-800 transition shadow-sm"
+              className="w-full sm:w-auto min-w-[180px] px-8 py-3 rounded-xl
+                      bg-[#16A34A]
+                      text-white
+                      font-semibold
+                      transition
+                      hover:bg-[#15803D]
+                      disabled:opacity-60
+                      disabled:cursor-not-allowed"
             >
-              {loading ? "Submitting..." : "Submit Donation"}
+              {loading ? "Creating Donation..." : "Submit Donation"}
             </button>
           </div>
         </form>

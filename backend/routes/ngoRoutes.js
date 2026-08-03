@@ -1,13 +1,14 @@
 import express from "express";
 import {
+    createDonationRequest,
     getAvailableDonations,
+    getMyRequests,
+    getNGODashboardStats,
+    getNGOHistory,
     getNGOProfile,
     updateNGOProfile,
-    getNGODashboardStats,
-    createDonationRequest,
-    getNGOHistory,
 } from "../controllers/ngoController.js";
-import { protect, authorize } from "../middleware/authMiddleware.js";
+import { authorize, protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -31,6 +32,13 @@ router.get("/donations", protect, authorize("ngo"), getAvailableDonations);
  * @access  Private (NGO only)
  */
 router.post("/request", protect, authorize("ngo"), createDonationRequest);
+
+router.get(
+    "/requests",
+    protect,
+    authorize("ngo"),
+    getMyRequests
+);
 
 /**
  * @route   GET /api/v1/ngo/history

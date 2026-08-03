@@ -2,6 +2,7 @@ import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+// import { formatDateTime } from "../../utils/dateUtils";
 
 export default function MyDonations() {
     const navigate = useNavigate();
@@ -9,92 +10,169 @@ export default function MyDonations() {
     const [donations, setDonations] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchDonations = async () => {
-        try {
-            const { data } = await api.get("/donations/my-donations");
-            setDonations(data.data || []);
-        } catch (error) {
-            console.error("Failed to fetch donations:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-        useEffect(() => {
-        fetchDonations();
+    useEffect(() => {
+        let mounted = true;
+
+        const loadDonations = async () => {
+            try {
+                setLoading(true);
+
+                const { data } = await api.get(
+                    "/donations/my-donations"
+                );
+
+                if (mounted) {
+                    setDonations(data.data || []);
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to fetch donations:",
+                    error
+                );
+            } finally {
+                if (mounted) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        loadDonations();
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
     if (loading) {
         return (
-            <div className="p-6">
-                <h1 className="text-xl font-semibold">Loading donations...</h1>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <div className="w-10 h-10 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="mt-4 text-sm text-gray-500">
+                        Loading donations...
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                My Donations
-            </h1>
-            <div className="bg-white rounded-xl shadow border overflow-hidden">
-                <table className="w-full">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="text-left p-4">Food</th>
-                            <th className="text-left p-4">Category</th>
-                            <th className="text-left p-4">Quantity</th>
-                            <th className="text-left p-4">Pickup Time</th>
-                            <th className="text-left p-4">Status</th>
-                            <th className="text-center p-4">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {donations.length === 0 ? (
-                            <tr>
-                                <td
-                                    colSpan="6"
-                                    className="text-center py-8 text-gray-500"
-                                >
-                                    No donations found.
-                                </td>
-                            </tr>
-                        ) : (
-                            donations.map((donation) => (
-                                <tr
-                                    key={donation._id}
-                                    className="border-t"
-                                >
-                                    <td className="p-4">
-                                        {donation.foodName}
-                                    </td>
-                                    <td className="p-4">
-                                        {donation.category}
-                                    </td>
-                                    <td className="p-4">
-                                        {donation.quantity}
-                                    </td>
-                                    <td className="p-4">
-                                        {new Date(donation.pickupTime).toLocaleString()}
-                                    </td>
-                                    <td className="p-4">
-                                        {donation.status}
-                                    </td>
-                                    <td className="p-4 text-center">
-                                        <button
-                                            onClick={() =>
-                                                navigate(`/donations/${donation._id}`)
-                                            }
-                                            className="text-green-600 hover:text-green-700"
-                                        >
-                                            <Eye size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+        <div className="flex-1 min-h-screen bg-gray-50 p-4 sm:p-6">
+            {/* Header */}
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        My Donations
+                    </h1>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                        View and manage all donations you've created.
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => navigate("/create-donation")}
+                    className="rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D]"
+                >
+                    + Create Donation
+                </button>
             </div>
+
+            {donations.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
+                    <h2 className="text-lg font-semibold text-gray-800">
+                        No Donations Yet
+                    </h2>
+
+                    <p className="mt-2 text-sm text-gray-500">
+                        Create your first food donation to help NGOs.
+                    </p>
+                </div>
+            ) : (
+                <div className="grid gap-5">
+                    {donations.map((donation) => (
+                        <div
+                            key={donation._id}
+                            className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md"
+                        >
+                            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition">
+
+                                {/* Top Row */}
+                                <div className="flex flex-wrap items-center justify-between gap-6">
+
+                                    <div>
+                                        <p className="text-xs uppercase text-gray-500">Food</p>
+                                        <p className="font-semibold text-lg">
+                                            {donation.foodName}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs uppercase text-gray-500">Quantity</p>
+                                        <p className="font-semibold">
+                                            {donation.quantity}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs uppercase text-gray-500">Category</p>
+                                        <p className="font-semibold capitalize">
+                                            {donation.category}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs uppercase text-gray-500">Pickup Time</p>
+                                        <p className="font-semibold">
+                                            {new Date(donation.pickupTime).toLocaleString("en-IN", {
+                                                day: "numeric",
+                                                month: "short",
+                                                year: "numeric",
+                                                hour: "numeric",
+                                                minute: "2-digit",
+                                                hour12: true,
+                                            })}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <span
+                                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${donation.status === "accepted"
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-yellow-100 text-yellow-700"
+                                                }`}
+                                        >
+                                            {donation.status}
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => navigate(`/donations/${donation._id}`)}
+                                        className="inline-flex items-center gap-2 rounded-xl border border-[#16A34A]
+            px-5 py-2.5 text-sm font-semibold text-[#16A34A]
+            hover:bg-[#16A34A] hover:text-white transition"
+                                    >
+                                        <Eye size={18} />
+                                        View Details
+                                    </button>
+
+                                </div>
+
+                                {/* Address */}
+                                <div className="mt-5 border-t border-gray-100 pt-4">
+                                    <p className="text-xs uppercase text-gray-500">
+                                        Pickup Address
+                                    </p>
+
+                                    <p className="mt-1 font-medium text-gray-800">
+                                        {donation.pickupAddress}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }

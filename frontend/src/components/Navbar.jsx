@@ -6,32 +6,44 @@ import {
   Settings,
   User,
 } from "lucide-react";
-import { useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import foodDonationIcon from "../assets/food_donation_icon.png";
 
 export default function Navbar({ onMenuClick }) {
   const navigate = useNavigate();
 
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  const user = (() => {
+  const profileRef = useRef(null);
+
+  const user = useMemo(() => {
     try {
-      const stored = JSON.parse(localStorage.getItem("user") || "{}");
+      const stored = JSON.parse(
+        localStorage.getItem("user") || "{}"
+      );
 
       return {
         ...stored,
-        name: stored.organizationName || stored.name || "User",
+        name:
+          stored.organizationName ||
+          stored.name ||
+          "User",
         email: stored.email || "",
       };
     } catch {
       return {
         name: "User",
         email: "",
+        role: "",
       };
     }
-  })();
+  }, []);
 
   const isNGO = user.role === "ngo";
 
@@ -47,204 +59,234 @@ export default function Navbar({ onMenuClick }) {
     ? "/ngo/dashboard"
     : "/dashboard";
 
-  // Go to Home
+  const notificationPath = isNGO
+    ? "/ngo/notifications"
+    : "/notifications";
+
+  const unreadCount = 3;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target)
+      ) {
+        setIsProfileOpen(false);
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setIsProfileOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+
+    document.addEventListener(
+      "keydown",
+      handleEscape
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape
+      );
+    };
+  }, []);
+
+  const closeProfileMenu = () =>
+    setIsProfileOpen(false);
+
   const handleLogoClick = () => {
     navigate(dashboardPath);
+  };
+
+  const handleNotificationClick = () => {
+    navigate(notificationPath);
+  };
+
+  const handleProfileNavigation = (path) => {
+    closeProfileMenu();
+    navigate(path);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    setIsProfileOpen(false);
-    setIsNotificationOpen(false);
+    closeProfileMenu();
 
-    navigate("/auth/login", { replace: true });
+    navigate("/", {
+      replace: true,
+    });
   };
-
   return (
-    <nav className="fixed w-full h-16 flex items-center justify-between px-4 sm:px-6 bg-white border-b border-gray-200">
+    <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-gray-200 shadow-sm">
+      <div className="h-full flex items-center justify-between px-4 sm:px-6">
 
-      {/* ================= LEFT SECTION ================= */}
-      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Left Section */}
+        <div className="flex items-center gap-3">
 
-        {/* Menu Button
-            Only visible on mobile/tablet */}
-        <button
-          onClick={onMenuClick}
-          className="md:hidden text-gray-700 hover:text-gray-900 transition"
-          aria-label="Open menu"
-        >
-          <Menu size={22} />
-        </button>
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition"
+            aria-label="Open Menu"
+          >
+            <Menu size={22} />
+          </button>
 
-        {/* Logo + Website Name */}
-        <button
-          onClick={handleLogoClick}
-          className="flex items-center gap-0 text-left"
-        >
-          {/* Logo */}
-          <div className="w-22 h-10 flex items-center justify-center shrink-0 ">
+          <button
+            onClick={handleLogoClick}
+            className="flex items-center gap-3 group"
+          >
             <img
               src={foodDonationIcon}
-              alt="Food Donation Logo"
-              className="w-22 h-22 object-contain"
+              alt="FoodRescue"
+              className="w-12 h-12 object-contain"
             />
-          </div>
 
-          {/* Website Name */}
-          <div className="leading-tight mr-2">
-            <h1 className="text-sm sm:text-base font-semibold text-gray-900">
-              FoodRescue
-            </h1>
+            <div className="hidden sm:block text-left">
+              <h1 className="text-base font-semibold text-gray-900 group-hover:text-[#16A34A] transition-colors">
+                FoodRescue
+              </h1>
 
-            <p className="hidden sm:block text-xs text-gray-500">
-              Share Food, Help People
-            </p>
-          </div>
-        </button>
-      </div>
+              <p className="text-xs text-gray-500">
+                Share Food, Help People
+              </p>
+            </div>
+          </button>
+        </div>
 
-      {/* ================= RIGHT SECTION ================= */}
-      <div className="flex items-center gap-4 sm:gap-6">
+        {/* Right Section */}
+        <div className="flex items-center gap-4">
 
-        {/* Notification */}
-        <div className="relative">
-
+          {/* Notifications */}
           <button
-            onClick={() => {
-              setIsNotificationOpen(!isNotificationOpen);
-              setIsProfileOpen(false);
-            }}
-            className="relative text-gray-700 hover:text-gray-900 transition"
+            onClick={handleNotificationClick}
+            className="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition"
             aria-label="Notifications"
           >
-            <Bell size={20} />
-
-            {/* TODO: Replace with unread notification count from backend */}
-            <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
-              3
-            </span>
-          </button>
-
-          {/* Notification Dropdown */}
-          {/* TODO: Render notifications dynamically */}
-          {isNotificationOpen && (
-            <div className="absolute right-0 top-10 w-72 max-w-[90vw] bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-
-              <div className="px-4 py-3 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">
-                  Notifications
-                </h3>
-              </div>
-
-              <div className="p-4 space-y-3">
-
-                <button className="w-full text-left text-sm text-gray-700 hover:bg-gray-50 p-2 rounded">
-                  New donation request received.
-                </button>
-
-                <button className="w-full text-left text-sm text-gray-700 hover:bg-gray-50 p-2 rounded">
-                  Your donation has been accepted.
-                </button>
-
-                <button className="w-full text-left text-sm text-gray-700 hover:bg-gray-50 p-2 rounded">
-                  Pickup scheduled for today.
-                </button>
-
-              </div>
-
-              <button
-                onClick={() => setIsNotificationOpen(false)}
-                className="w-full py-2 text-sm text-green-600 border-t border-gray-200 hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ================= PROFILE ================= */}
-        <div className="relative">
-
-          <button
-            onClick={() => {
-              setIsProfileOpen(!isProfileOpen);
-              setIsNotificationOpen(false);
-            }}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-
-            {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-              <User size={17} className="text-gray-500" />
-            </div>
-
-            {/* User Name
-                Hidden on small mobile screens */}
-            <span className="hidden sm:block text-sm text-gray-800 font-medium">
-              {user?.name || "Donor"}
-            </span>
-
-            <ChevronDown
-              size={16}
-              className={`text-gray-500 transition-transform ${isProfileOpen ? "rotate-180" : ""
-                }`}
+            <Bell
+              size={20}
+              className="text-gray-700"
             />
+
+            {unreadCount > 0 && (
+              <span
+                className="absolute top-1 right-1 min-w-[18px] h-[18px]
+              px-1 rounded-full bg-red-500 text-white
+              text-[10px] font-semibold flex items-center justify-center"
+              >
+                {unreadCount > 99
+                  ? "99+"
+                  : unreadCount}
+              </span>
+            )}
           </button>
 
-          {/* Profile Dropdown */}
-          {isProfileOpen && (
-            <div className="absolute right-0 top-11 w-52 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-
-              {/* User Info */}
-              <div className="px-4 py-3 border-b border-gray-200">
-                <p className="text-sm font-semibold text-gray-900">
-                  {user?.name || "Donor"}
-                </p>
-
-                <p className="text-xs text-gray-500 truncate">
-                  {user?.email || ""}
-                </p>
+          {/* Profile */}
+          <div
+            ref={profileRef}
+            className="relative"
+          >
+            <button
+              onClick={() =>
+                setIsProfileOpen((prev) => !prev)
+              }
+              className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-gray-100 transition"
+            >
+              <div
+                className="w-9 h-9 rounded-full
+              bg-[#16A34A]/10
+              flex items-center justify-center"
+              >
+                <User
+                  size={18}
+                  className="text-[#16A34A]"
+                />
               </div>
 
-              {/* Profile */}
-              <button
-                onClick={() => {
-                  navigate(profilePath);
-                  setIsProfileOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <User size={17} />
-                Profile
-              </button>
+              <div className="hidden sm:flex flex-col items-start max-w-[150px]">
+                <span className="text-sm font-medium text-gray-800 truncate w-full">
+                  {user.name}
+                </span>
 
-              {/* Settings */}
-              <button
-                onClick={() => {
-                  navigate(settingsPath);
-                  setIsProfileOpen(false);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
-              >
-                <Settings size={17} />
-                Settings
-              </button>
+                <span className="text-xs text-gray-500 truncate w-full">
+                  {user.email}
+                </span>
+              </div>
 
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
-              >
-                <LogOut size={17} />
-                Logout
-              </button>
+              <ChevronDown
+                size={16}
+                className={`text-gray-500 transition-transform duration-200 ${isProfileOpen
+                    ? "rotate-180"
+                    : ""
+                  }`}
+              />
+            </button>
 
-            </div>
-          )}
+            {isProfileOpen && (
+              <div
+                className="absolute right-0 mt-2 w-56
+              bg-white rounded-xl border border-gray-200
+              shadow-xl overflow-hidden"
+              >
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="font-semibold text-gray-900 truncate">
+                    {user.name}
+                  </p>
+
+                  <p className="text-xs text-gray-500 truncate mt-1">
+                    {user.email}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() =>
+                    handleProfileNavigation(
+                      profilePath
+                    )
+                  }
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition"
+                >
+                  <User size={17} />
+                  Profile
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleProfileNavigation(
+                      settingsPath
+                    )
+                  }
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 transition"
+                >
+                  <Settings size={17} />
+                  Settings
+                </button>
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 border-t border-gray-100 hover:bg-red-50 transition"
+                >
+                  <LogOut size={17} />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+
         </div>
-
       </div>
     </nav>
   );

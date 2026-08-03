@@ -33,3 +33,21 @@ export const rejectRequest = async (id) => {
 
     return response.data;
 };
+
+// ================= DONOR PROFILE =================
+
+// Get donor profile
+export const getDonorProfile = async () => {
+    const response = await api.get("/donor/profile");
+    return response.data;
+};
+
+// Update donor profile
+export const updateDonorProfile = async (profileData) => {
+    const response = await api.put(
+        "/donor/profile",
+        profileData
+    );
+
+    return response.data;
+};

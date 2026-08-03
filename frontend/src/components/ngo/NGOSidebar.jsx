@@ -42,7 +42,9 @@ export default function NGOSidebar({ isOpen, onClose }) {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    navigate("/auth/login");
+    navigate("/", {
+      replace: true,
+    });
     onClose?.();
   };
 

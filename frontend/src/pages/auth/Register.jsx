@@ -6,6 +6,7 @@ import AuthInput from "../../components/auth/AuthInput";
 import AuthLayout from "../../components/auth/AuthLayout";
 import Logo from "../../components/auth/Logo";
 import PasswordInput from "../../components/auth/PasswordInput";
+import { registerUser } from "../../services/authService";
 import {
   BG_ERROR,
   BORDER,
@@ -26,7 +27,6 @@ import {
   TEXT_MUTED,
 } from "../../utils/constants";
 import { validateRegisterForm } from "../../utils/validators";
-import { registerUser } from "../../services/authService";
 
 export default function SignupForm() {
   const [role, setRole] = useState("donor");
@@ -60,9 +60,9 @@ export default function SignupForm() {
     if (currentRole === "donor") {
       return {
         name: currentFormData.fullName,
-        email: currentFormData.email,
+        email: currentFormData.email.trim().toLowerCase(),
         password: currentFormData.password,
-        phone: currentFormData.phone,
+        phone: currentFormData.phone.trim(),
         role: "donor",
         city: currentFormData.city,
         organizationName: currentFormData.orgName || "",
@@ -73,9 +73,9 @@ export default function SignupForm() {
 
     return {
       name: currentFormData.contactPerson || currentFormData.ngoName,
-      email: currentFormData.email,
+      email: currentFormData.email.trim().toLowerCase(),
       password: currentFormData.password,
-      phone: currentFormData.phone,
+      phone: currentFormData.phone.trim(),
       role: "ngo",
       city: currentFormData.city,
       organizationName: currentFormData.ngoName || "",
@@ -109,15 +109,15 @@ export default function SignupForm() {
 
       // Redirect to role-specific dashboard
       if (response.data.role === "ngo") {
-        navigate("/ngo/dashboard");
+        navigate("/ngo/dashboard", { replace: true });
       } else {
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     } catch (error) {
       setServerError(
         error.response?.data?.message ||
-          error.message ||
-          "Registration failed"
+        error.message ||
+        "Registration failed"
       );
     } finally {
       setLoading(false);
