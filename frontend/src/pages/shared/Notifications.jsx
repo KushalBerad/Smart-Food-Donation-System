@@ -23,10 +23,15 @@ export default function Notifications() {
 
     const fetchNotifications = async () => {
         try {
+            setLoading(true);
+
             const response = await getNotifications();
+
             setNotifications(response.data || []);
         } catch (error) {
-            console.error(error);
+            console.error("Failed to fetch notifications:", error);
+
+            setNotifications([]);
         } finally {
             setLoading(false);
         }
@@ -39,6 +44,12 @@ export default function Notifications() {
 
     const markAsRead = async (id) => {
         try {
+            const notification = notifications.find(
+                (item) => item._id === id
+            );
+
+            if (notification?.isRead) return;
+
             await markNotificationAsRead(id);
 
             setNotifications((prev) =>
@@ -70,7 +81,18 @@ export default function Notifications() {
 
     const handleDelete = async (id) => {
         try {
-            await deleteNotification(id);
+            const previous = notifications;
+
+            setNotifications((prev) =>
+                prev.filter((item) => item._id !== id)
+            );
+
+            try {
+                await deleteNotification(id);
+            } catch (error) {
+                console.error(error);
+                setNotifications(previous);
+            }
 
             setNotifications((prev) =>
                 prev.filter((item) => item._id !== id)
@@ -80,27 +102,22 @@ export default function Notifications() {
         }
     };
 
-    const getIcon = (type) => {
-        switch (type) {
+    const getIcon = (type = "") => {
+        switch (type.toLowerCase()) {
             case "accepted":
-                return (
-                    <CheckCircle className="text-green-600" size={22} />
-                );
+                return <CheckCircle className="text-green-600" size={22} />;
 
             case "rejected":
-                return (
-                    <XCircle className="text-red-500" size={22} />
-                );
+                return <XCircle className="text-red-500" size={22} />;
 
             case "request":
-                return (
-                    <Bell className="text-amber-500" size={22} />
-                );
+                return <Bell className="text-amber-500" size={22} />;
+
+            case "profile":
+                return <Bell className="text-blue-500" size={22} />;
 
             default:
-                return (
-                    <Clock className="text-sky-500" size={22} />
-                );
+                return <Clock className="text-sky-500" size={22} />;
         }
     };
 
@@ -111,6 +128,12 @@ export default function Notifications() {
             </div>
         );
     }
+
+    const formatDate = (date) =>
+        new Date(date).toLocaleString("en-IN", {
+            dateStyle: "medium",
+            timeStyle: "short",
+        });
 
     return (
         <div className="flex-1 p-6 bg-gray-50 min-h-screen space-y-6">
@@ -130,6 +153,7 @@ export default function Notifications() {
                 </div>
 
                 <button
+                    type="button"
                     onClick={markAllAsRead}
                     className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl hover:bg-green-700"
                 >
@@ -177,7 +201,7 @@ export default function Notifications() {
                                     </p>
 
                                     <p className="text-xs text-gray-400 mt-2">
-                                        {new Date(item.createdAt).toLocaleString()}
+                                        {formatDate(item.createdAt)}
                                     </p>
 
                                 </div>
@@ -190,6 +214,7 @@ export default function Notifications() {
                                 )}
 
                                 <button
+                                    type="button"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleDelete(item._id);

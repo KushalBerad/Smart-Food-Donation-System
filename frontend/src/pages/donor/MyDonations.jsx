@@ -95,79 +95,77 @@ export default function MyDonations() {
                             key={donation._id}
                             className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md"
                         >
-                            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition">
 
-                                {/* Top Row */}
-                                <div className="flex flex-wrap items-center justify-between gap-6">
+                            {/* Top Row */}
+                            <div className="flex flex-wrap items-center justify-between gap-6">
 
-                                    <div>
-                                        <p className="text-xs uppercase text-gray-500">Food</p>
-                                        <p className="font-semibold text-lg">
-                                            {donation.foodName}
-                                        </p>
-                                    </div>
+                                <div>
+                                    <p className="text-xs uppercase text-gray-500">Food</p>
+                                    <p className="font-semibold text-lg">
+                                        {donation.foodName}
+                                    </p>
+                                </div>
 
-                                    <div>
-                                        <p className="text-xs uppercase text-gray-500">Quantity</p>
-                                        <p className="font-semibold">
-                                            {donation.quantity}
-                                        </p>
-                                    </div>
+                                <div>
+                                    <p className="text-xs uppercase text-gray-500">Quantity</p>
+                                    <p className="font-semibold">
+                                        {donation.quantity}
+                                    </p>
+                                </div>
 
-                                    <div>
-                                        <p className="text-xs uppercase text-gray-500">Category</p>
-                                        <p className="font-semibold capitalize">
-                                            {donation.category}
-                                        </p>
-                                    </div>
+                                <div>
+                                    <p className="text-xs uppercase text-gray-500">Category</p>
+                                    <p className="font-semibold capitalize">
+                                        {donation.category}
+                                    </p>
+                                </div>
 
-                                    <div>
-                                        <p className="text-xs uppercase text-gray-500">Pickup Time</p>
-                                        <p className="font-semibold">
-                                            {new Date(donation.pickupTime).toLocaleString("en-IN", {
-                                                day: "numeric",
-                                                month: "short",
-                                                year: "numeric",
-                                                hour: "numeric",
-                                                minute: "2-digit",
-                                                hour12: true,
-                                            })}
-                                        </p>
-                                    </div>
+                                <div>
+                                    <p className="text-xs uppercase text-gray-500">Pickup Time</p>
+                                    <p className="font-semibold">
+                                        {new Date(donation.pickupTime).toLocaleString("en-IN", {
+                                            day: "numeric",
+                                            month: "short",
+                                            year: "numeric",
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                            hour12: true,
+                                        })}
+                                    </p>
+                                </div>
 
-                                    <div>
-                                        <span
-                                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${donation.status === "accepted"
-                                                ? "bg-green-100 text-green-700"
-                                                : "bg-yellow-100 text-yellow-700"
-                                                }`}
-                                        >
-                                            {donation.status}
-                                        </span>
-                                    </div>
+                                <div>
+                                    <span
+                                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${donation.status === "accepted"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-yellow-100 text-yellow-700"
+                                            }`}
+                                    >
+                                        {donation.status}
+                                    </span>
+                                </div>
 
-                                    <button
-                                        onClick={() => navigate(`/donations/${donation._id}`)}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-[#16A34A]
+                                <button
+                                    onClick={() => navigate(`/donations/${donation._id}`)}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-[#16A34A]
             px-5 py-2.5 text-sm font-semibold text-[#16A34A]
             hover:bg-[#16A34A] hover:text-white transition"
-                                    >
-                                        <Eye size={18} />
-                                        View Details
-                                    </button>
+                                >
+                                    <Eye size={18} />
+                                    View Details
+                                </button>
 
-                                </div>
+                            </div>
 
-                                {/* Address */}
-                                <div className="mt-5 border-t border-gray-100 pt-4">
-                                    <p className="text-xs uppercase text-gray-500">
-                                        Pickup Address
-                                    </p>
+                            {/* Address */}
+                            <div className="mt-5 border-t border-gray-100 pt-4">
+                                <p className="text-xs uppercase text-gray-500">
+                                    Pickup Address
+                                </p>
 
-                                    <p className="mt-1 font-medium text-gray-800">
-                                        {donation.pickupAddress}
-                                    </p>
-                                </div>
+                                <p className="mt-1 font-medium text-gray-800">
+                                    {donation.pickupAddress}
+                                </p>
                             </div>
                         </div>
                     ))}

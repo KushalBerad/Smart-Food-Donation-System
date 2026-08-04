@@ -2,25 +2,25 @@ import { Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import AuthAlert from "../../components/auth/AuthAlert";
 import AuthButton from "../../components/auth/AuthButton";
+import AuthFooter from "../../components/auth/AuthFooter";
+import AuthHeader from "../../components/auth/AuthHeader";
 import AuthInput from "../../components/auth/AuthInput";
 import AuthLayout from "../../components/auth/AuthLayout";
-import Logo from "../../components/auth/Logo";
 import PasswordInput from "../../components/auth/PasswordInput";
 
 import {
-    BORDER,
     GREEN,
     GREEN_DARK,
-    PAGE_BG,
     TEXT_DARK,
-    TEXT_MUTED,
 } from "../../utils/constants";
 
 import { loginUser } from "../../services/authService";
 import { validateEmail } from "../../utils/validators";
 
 export default function Login() {
+
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -38,6 +38,7 @@ export default function Login() {
     };
 
     const handleChange = (name, value) => {
+
         setFormData((prev) => ({
             ...prev,
             [name]: value,
@@ -53,14 +54,17 @@ export default function Login() {
         if (serverError) {
             setServerError("");
         }
+
     };
 
     const validateForm = () => {
+
         const newErrors = {};
 
         if (!formData.email.trim()) {
             newErrors.email = "Email is required";
-        } else if (!validateEmail(formData.email)) {
+        }
+        else if (!validateEmail(formData.email)) {
             newErrors.email = "Enter a valid email";
         }
 
@@ -71,9 +75,11 @@ export default function Login() {
         setErrors(newErrors);
 
         return Object.keys(newErrors).length === 0;
+
     };
 
     const handleSubmit = async (e) => {
+
         e.preventDefault();
 
         if (!validateForm()) {
@@ -81,6 +87,7 @@ export default function Login() {
         }
 
         try {
+
             setLoading(true);
             setServerError("");
 
@@ -93,71 +100,71 @@ export default function Login() {
                 throw new Error(response.message);
             }
 
-            localStorage.setItem("token", response.token);
+            localStorage.setItem(
+                "token",
+                response.token
+            );
+
             localStorage.setItem(
                 "user",
                 JSON.stringify(response.data)
             );
 
-            // Role-based redirect
             if (response.data.role === "ngo") {
-                navigate("/ngo/dashboard", { replace: true });
-            } else {
-                navigate("/dashboard", { replace: true });
+                navigate("/ngo/dashboard", {
+                    replace: true,
+                });
+            }
+            else {
+                navigate("/dashboard", {
+                    replace: true,
+                });
             }
 
-        } catch (error) {
+        }
+        catch (error) {
+
             setServerError(
                 error.response?.data?.message ||
                 error.message ||
                 "Login failed"
             );
-        } finally {
+
+        }
+        finally {
             setLoading(false);
         }
+
     };
 
     return (
-        <AuthLayout
-            pageBg={PAGE_BG}
-            border={BORDER}
-        >
-            <Logo
-                title="FoodRescue"
-                subtitle="Share Food, Help People"
-                gradientStyle={gradientStyle}
-                textDark={TEXT_DARK}
-                textMuted={TEXT_MUTED}
+
+        <AuthLayout>
+
+            <AuthHeader
+                title="Welcome Back"
+                subtitle="Login to your FoodRescue account."
             />
 
-            <h1
-                className="text-center text-[22px] font-bold mt-2 mb-1"
-                style={{ color: TEXT_DARK }}
-            >
-                Welcome Back
-            </h1>
-
-            <p
-                className="text-center text-[13px] mb-6"
-                style={{ color: TEXT_MUTED }}
-            >
-                Login to your account
-            </p>
-
-            {serverError && (
-                <div className="mb-4 rounded-lg border border-red-500 bg-red-100 px-3 py-2 text-sm text-red-700">
-                    {serverError}
-                </div>
-            )}
+            <AuthAlert
+                type="error"
+                message={serverError}
+            />
 
             <form
                 onSubmit={handleSubmit}
-                className="space-y-4"
+                className="space-y-6"
             >
+
+                {/* Email */}
+
                 <div>
+
                     <label
-                        className="text-[13px] font-semibold mb-1.5 block"
-                        style={{ color: TEXT_DARK }}
+                        className="mb-2 block text-sm font-semibold"
+                        style={{
+                            color: TEXT_DARK,
+                        }}
                     >
                         Email Address
                     </label>
@@ -168,22 +175,33 @@ export default function Login() {
                         placeholder="Enter your email"
                         value={formData.email}
                         onChange={(e) =>
-                            handleChange("email", e.target.value)
+                            handleChange(
+                                "email",
+                                e.target.value
+                            )
                         }
                         hasError={!!errors.email}
                     />
 
                     {errors.email && (
-                        <p className="text-red-500 text-xs mt-1">
+
+                        <p className="mt-2 text-xs text-red-500">
                             {errors.email}
                         </p>
+
                     )}
+
                 </div>
 
+                {/* Password */}
+
                 <div>
+
                     <label
-                        className="text-[13px] font-semibold mb-1.5 block"
-                        style={{ color: TEXT_DARK }}
+                        className="mb-2 block text-sm font-semibold"
+                        style={{
+                            color: TEXT_DARK,
+                        }}
                     >
                         Password
                     </label>
@@ -193,7 +211,10 @@ export default function Login() {
                         placeholder="Enter your password"
                         value={formData.password}
                         onChange={(e) =>
-                            handleChange("password", e.target.value)
+                            handleChange(
+                                "password",
+                                e.target.value
+                            )
                         }
                         hasError={!!errors.password}
                         showPassword={showPassword}
@@ -203,44 +224,53 @@ export default function Login() {
                     />
 
                     {errors.password && (
-                        <p className="text-red-500 text-xs mt-1">
+
+                        <p className="mt-2 text-xs text-red-500">
                             {errors.password}
                         </p>
+
                     )}
+
                 </div>
 
+                {/* Forgot Password */}
+
                 <div className="flex justify-end">
+
                     <Link
                         to="/auth/forgot-password"
-                        className="text-sm font-medium"
-                        style={{ color: GREEN }}
+                        className="text-sm font-semibold hover:underline"
+                        style={{
+                            color: GREEN,
+                        }}
                     >
                         Forgot Password?
                     </Link>
+
                 </div>
+
+                {/* Login Button */}
 
                 <AuthButton
                     type="submit"
                     disabled={loading}
                     style={gradientStyle}
                 >
-                    {loading ? "Logging in..." : "Login"}
+                    {loading
+                        ? "Logging in..."
+                        : "Login"}
                 </AuthButton>
+
             </form>
 
-            <div
-                className="text-center text-[13px] mt-5"
-                style={{ color: TEXT_MUTED }}
-            >
-                Don't have an account?{" "}
-                <Link
-                    to="/auth/register"
-                    className="font-semibold"
-                    style={{ color: GREEN }}
-                >
-                    Register
-                </Link>
-            </div>
+            <AuthFooter
+                question="New to FoodRescue?"
+                linkText="Create an account"
+                linkTo="/auth/register"
+            />
+
         </AuthLayout>
+
     );
+
 }

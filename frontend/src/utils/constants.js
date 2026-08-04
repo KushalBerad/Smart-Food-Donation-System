@@ -91,6 +91,14 @@ export const FIELD_CONFIG = {
                 span: 1
             },
             {
+                name: "address",
+                label: "Pickup Address",
+                placeholder: "Enter complete pickup address",
+                icon: MapPin,
+                required: true,
+                span: 2,
+            },
+            {
                 name: "orgName",
                 label: "Organization Name (Optional)",
                 placeholder: "e.g. Your Organization / Restaurant / Group",
@@ -168,10 +176,18 @@ export const FIELD_CONFIG = {
                 span: 1
             },
             {
+                name: "address",
+                label: "NGO Address",
+                placeholder: "Enter complete NGO address",
+                icon: MapPin,
+                required: true,
+                span: 2,
+            },
+            {
                 name: "verificationDoc",
-                label: "Verification Document",
-                placeholder: "Upload registration certificate / NGO document",
-                icon: Upload, required: true,
+                label: "Verification Document (Optional)",
+                placeholder: "Upload registration certificate (Optional)",
+                icon: Upload, required: false,
                 span: 2,
                 type: "file"
             },

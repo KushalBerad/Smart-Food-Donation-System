@@ -13,12 +13,15 @@ import {
   useState,
 } from "react";
 import { useNavigate } from "react-router-dom";
+
 import foodDonationIcon from "../assets/food_donation_icon.png";
+import { getNotifications } from "../services/notificationService";
 
 export default function Navbar({ onMenuClick }) {
   const navigate = useNavigate();
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const profileRef = useRef(null);
 
@@ -35,6 +38,7 @@ export default function Navbar({ onMenuClick }) {
           stored.name ||
           "User",
         email: stored.email || "",
+        role: stored.role || "",
       };
     } catch {
       return {
@@ -63,23 +67,21 @@ export default function Navbar({ onMenuClick }) {
     ? "/ngo/notifications"
     : "/notifications";
 
-  const unreadCount = 3;
-
   useEffect(() => {
-    function handleClickOutside(event) {
+    const handleClickOutside = (event) => {
       if (
         profileRef.current &&
         !profileRef.current.contains(event.target)
       ) {
         setIsProfileOpen(false);
       }
-    }
+    };
 
-    function handleEscape(event) {
+    const handleEscape = (event) => {
       if (event.key === "Escape") {
         setIsProfileOpen(false);
       }
-    }
+    };
 
     document.addEventListener(
       "mousedown",
@@ -104,32 +106,66 @@ export default function Navbar({ onMenuClick }) {
     };
   }, []);
 
-  const closeProfileMenu = () =>
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await getNotifications();
+
+        const unread =
+          (response.data || []).filter(
+            (notification) => !notification.isRead
+          ).length;
+
+        setUnreadCount(unread);
+      } catch (error) {
+        console.error(
+          "Failed to fetch notifications:",
+          error
+        );
+      }
+    };
+
+    fetchUnreadCount();
+  }, []);
+
+  const closeProfileMenu = () => {
     setIsProfileOpen(false);
+  };
 
   const handleLogoClick = () => {
-    navigate(dashboardPath);
+    if (window.location.pathname !== dashboardPath) {
+      navigate(dashboardPath);
+    }
   };
 
   const handleNotificationClick = () => {
-    navigate(notificationPath);
+    closeProfileMenu();
+
+    if (window.location.pathname !== notificationPath) {
+      navigate(notificationPath);
+    }
   };
 
   const handleProfileNavigation = (path) => {
     closeProfileMenu();
-    navigate(path);
+
+    if (window.location.pathname !== path) {
+      navigate(path);
+    }
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
+    setUnreadCount(0);
     closeProfileMenu();
 
     navigate("/", {
       replace: true,
     });
   };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-gray-200 shadow-sm">
       <div className="h-full flex items-center justify-between px-4 sm:px-6">
@@ -172,6 +208,7 @@ export default function Navbar({ onMenuClick }) {
 
           {/* Notifications */}
           <button
+            type="button"
             onClick={handleNotificationClick}
             className="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition"
             aria-label="Notifications"
@@ -183,9 +220,12 @@ export default function Navbar({ onMenuClick }) {
 
             {unreadCount > 0 && (
               <span
-                className="absolute top-1 right-1 min-w-[18px] h-[18px]
-              px-1 rounded-full bg-red-500 text-white
-              text-[10px] font-semibold flex items-center justify-center"
+                className="absolute top-1 right-1
+      min-w-[18px] h-[18px]
+      px-1 rounded-full
+      bg-red-500 text-white
+      text-[10px] font-semibold
+      flex items-center justify-center"
               >
                 {unreadCount > 99
                   ? "99+"
@@ -200,6 +240,7 @@ export default function Navbar({ onMenuClick }) {
             className="relative"
           >
             <button
+              type="button"
               onClick={() =>
                 setIsProfileOpen((prev) => !prev)
               }
@@ -229,8 +270,8 @@ export default function Navbar({ onMenuClick }) {
               <ChevronDown
                 size={16}
                 className={`text-gray-500 transition-transform duration-200 ${isProfileOpen
-                    ? "rotate-180"
-                    : ""
+                  ? "rotate-180"
+                  : ""
                   }`}
               />
             </button>
@@ -252,6 +293,7 @@ export default function Navbar({ onMenuClick }) {
                 </div>
 
                 <button
+                  type="button"
                   onClick={() =>
                     handleProfileNavigation(
                       profilePath
@@ -264,6 +306,7 @@ export default function Navbar({ onMenuClick }) {
                 </button>
 
                 <button
+                  type="button"
                   onClick={() =>
                     handleProfileNavigation(
                       settingsPath
@@ -276,6 +319,7 @@ export default function Navbar({ onMenuClick }) {
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 border-t border-gray-100 hover:bg-red-50 transition"
                 >

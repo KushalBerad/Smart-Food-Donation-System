@@ -9,7 +9,7 @@ const notificationSchema = new mongoose.Schema(
         },
         type: {
             type: String,
-            enum: ["accepted", "rejected", "request", "completed", "cancelled", "expired"],
+            enum: ["accepted", "rejected", "request", "completed", "cancelled", "expired","profile"],
             required: [true, "Notification type is required"],
         },
         title: {

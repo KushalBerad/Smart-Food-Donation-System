@@ -365,10 +365,10 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        if (donation.status !== "accepted") {
+        if (donation.status !== "picked_up") {
             return res.status(400).json({
                 success: false,
-                message: `Cannot complete donation with status '${donation.status}'. It must be 'accepted'.`,
+                message: `Cannot complete donation with status '${donation.status}'. It must be 'picked_up'.`,
             });
         }
 
@@ -453,7 +453,10 @@ export const getDonationStatus = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message:
+                process.env.NODE_ENV === "development"
+                    ? error.message
+                    : "Internal Server Error",
         });
 
     }
@@ -474,6 +477,7 @@ export const updateDonationStatus = async (req, res) => {
             "available",
             "requested",
             "accepted",
+            "picked_up",
             "completed",
             "expired",
             "cancelled",
@@ -496,7 +500,7 @@ export const updateDonationStatus = async (req, res) => {
         }
 
         // Owner check
-        if (donation.donorId.toString() !== req.user._id.toString()) {
+        if (donation.donorId.toString() !== req.user.id.toString()) {
             return res.status(403).json({
                 success: false,
                 message: "Unauthorized.",
@@ -529,7 +533,10 @@ export const updateDonationStatus = async (req, res) => {
 
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message:
+                process.env.NODE_ENV === "development"
+                    ? error.message
+                    : "Internal Server Error",
         });
 
     }

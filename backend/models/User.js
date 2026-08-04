@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema(
             required: [true, "City is required"],
             trim: true,
         },
+        address: {
+            type: String,
+            required: [true, "Address is required"],
+            trim: true,
+        },
 
         organizationName: {
             type: String,

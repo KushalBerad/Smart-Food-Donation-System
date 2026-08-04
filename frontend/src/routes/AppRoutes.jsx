@@ -6,6 +6,7 @@ import NGODashboardLayout from "../layouts/NGODashboardLayout";
 import ForgotPassword from "../pages/auth/ForgotPassword";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
+import ResetPassword from "../pages/auth/ResetPassword";
 import Home from "../pages/public/Home";
 
 // Donor Pages
@@ -18,6 +19,7 @@ import MyDonations from "../pages/donor/MyDonations";
 import Reports from "../pages/donor/Reports";
 import DonorRequestDetails from "../pages/donor/RequestDetails";
 import Requests from "../pages/donor/Requests";
+
 
 // NGO Pages
 import BrowseDonations from "../pages/ngo/BrowseDonations";
@@ -57,6 +59,11 @@ function AppRoutes() {
                 <Route
                     path="/auth/forgot-password"
                     element={<ForgotPassword />}
+                />
+
+                <Route
+                    path="/reset-password/:token"
+                    element={<ResetPassword />}
                 />
 
                 {/* ================= Donor ================= */}

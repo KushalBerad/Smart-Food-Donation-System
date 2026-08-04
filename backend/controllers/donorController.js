@@ -26,9 +26,10 @@ export const getDonorProfile = async (req, res) => {
             name: user.name || "",
             phone: user.phone || "",
             email: user.email || "",
-            city: user.city || donorProfile?.city || "",
-            address: donorProfile?.address || "",
-            totalDonations: donorProfile?.totalDonations || 0,
+            city: user.city || "",
+            address: user.address || "",
+            totalDonations:
+                donorProfile?.totalDonations || 0,
             totalQuantityDonated:
                 donorProfile?.totalQuantityDonated || 0,
         };
@@ -46,7 +47,9 @@ export const getDonorProfile = async (req, res) => {
         return res.status(500).json({
             success: false,
             message:
-                "Internal server error. Failed to fetch donor profile.",
+                process.env.NODE_ENV === "development"
+                    ? error.message
+                    : "Internal Server Error",
         });
 
     }
@@ -74,33 +77,22 @@ export const updateDonorProfile = async (req, res) => {
         if (name !== undefined) userUpdate.name = name;
         if (phone !== undefined) userUpdate.phone = phone;
         if (city !== undefined) userUpdate.city = city;
+        if (address !== undefined) userUpdate.address = address;
 
-        if (Object.keys(userUpdate).length > 0) {
-            await User.findByIdAndUpdate(
-                userId,
-                userUpdate,
-                {
-                    runValidators: true,
-                }
-            );
-        }
+        const updated = await User.findByIdAndUpdate(
+            userId,
+            userUpdate,
+            {
+                new: true,
+                runValidators: true,
+            }
+        );
 
-        if (address !== undefined) {
-            await DonorProfile.findOneAndUpdate(
-                { userId },
-                {
-                    $set: {
-                        address,
-                        userId,
-                    },
-                },
-                {
-                    upsert: true,
-                    new: true,
-                    runValidators: true,
-                    setDefaultsOnInsert: true,
-                }
-            );
+        if (!updated) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found.",
+            });
         }
 
         const [updatedUser, updatedProfile] =
@@ -118,12 +110,8 @@ export const updateDonorProfile = async (req, res) => {
                 name: updatedUser.name,
                 phone: updatedUser.phone,
                 email: updatedUser.email,
-                city:
-                    updatedUser.city ||
-                    updatedProfile?.city ||
-                    "",
-                address:
-                    updatedProfile?.address || "",
+                city: updatedUser.city || "",
+                address: updatedUser.address || "",
                 totalDonations:
                     updatedProfile?.totalDonations || 0,
                 totalQuantityDonated:
@@ -141,7 +129,9 @@ export const updateDonorProfile = async (req, res) => {
         return res.status(500).json({
             success: false,
             message:
-                "Internal server error. Failed to update donor profile.",
+                process.env.NODE_ENV === "development"
+                    ? error.message
+                    : "Internal Server Error",
         });
 
     }

@@ -20,6 +20,11 @@ const foodDonationSchema = new mongoose.Schema(
                 message: "Category must be either 'veg', 'non-veg', or 'other'",
             },
         },
+        acceptedNgoId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
         quantity: {
             type: String,
             required: [true, "Quantity is required"],
@@ -50,7 +55,7 @@ const foodDonationSchema = new mongoose.Schema(
         status: {
             type: String,
             enum: {
-                values: ["available", "requested", "accepted", "completed", "expired", "cancelled"],
+                values: ["available", "requested", "accepted", "picked_up", "completed", "expired", "cancelled"],
                 message: "Invalid status",
             },
             default: "available",

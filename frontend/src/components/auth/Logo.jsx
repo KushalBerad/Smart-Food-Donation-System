@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Logo({
     title,
     subtitle,
@@ -6,9 +8,12 @@ function Logo({
     textMuted,
 }) {
     return (
-        <div className="flex items-center gap-2.5 mb-5">
+        <Link
+            to="/"
+            className="inline-flex items-center gap-2.5 mb-5 group"
+        >
             <div
-                className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105"
                 style={gradientStyle}
             >
                 <svg
@@ -26,20 +31,20 @@ function Logo({
 
             <div>
                 <div
-                    className="font-bold text-[15px]"
+                    className="font-bold text-lg transition-colors group-hover:text-green-600"
                     style={{ color: textDark }}
                 >
                     {title}
                 </div>
 
                 <div
-                    className="text-xs"
+                    className="text-sm"
                     style={{ color: textMuted }}
                 >
                     {subtitle}
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }
 

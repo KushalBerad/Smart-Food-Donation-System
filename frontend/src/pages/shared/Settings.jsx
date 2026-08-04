@@ -137,8 +137,8 @@ export default function Settings() {
                         className="w-full border rounded-xl px-4 py-3"
                     >
                         <option>English</option>
-                        <option disabled>Hindi (Coming Soon)</option>
-                        <option disabled>Marathi (Coming Soon)</option>
+                        {/* <option disabled>Hindi (Coming Soon)</option> */}
+                        {/* <option disabled>Marathi (Coming Soon)</option> */}
                     </select>
 
                 </div>

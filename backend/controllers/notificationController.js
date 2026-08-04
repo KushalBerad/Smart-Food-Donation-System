@@ -8,7 +8,7 @@ import Notification from "../models/Notification.js";
 export const getNotifications = async (req, res) => {
     try {
         const notifications = await Notification.find({
-            user: req.user.id,
+            userId: req.user.id,
         })
             .sort({ createdAt: -1 })
             .lean();
@@ -37,7 +37,7 @@ export const markNotificationAsRead = async (req, res) => {
     try {
         const notification = await Notification.findOne({
             _id: req.params.id,
-            user: req.user.id,
+            userId: req.user.id,
         });
 
         if (!notification) {
@@ -46,9 +46,19 @@ export const markNotificationAsRead = async (req, res) => {
                 message: "Notification not found.",
             });
         }
-
-        notification.isRead = true;
-        await notification.save();
+        await Notification.findOneAndUpdate(
+            {
+                _id: req.params.id,
+                userId: req.user.id,
+            },
+            {
+                isRead: true,
+            },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
 
         return res.status(200).json({
             success: true,
@@ -72,7 +82,7 @@ export const markNotificationAsRead = async (req, res) => {
 export const markAllNotificationsAsRead = async (req, res) => {
     try {
         await Notification.updateMany(
-            { user: req.user.id, isRead: false },
+            { userId: req.user.id, isRead: false },
             { isRead: true }
         );
 
@@ -99,7 +109,7 @@ export const deleteNotification = async (req, res) => {
     try {
         const notification = await Notification.findOneAndDelete({
             _id: req.params.id,
-            user: req.user.id,
+            userId: req.user.id,
         });
 
         if (!notification) {

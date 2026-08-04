@@ -25,6 +25,7 @@ export default function DonorProfilePage() {
         const fetch = async () => {
             try {
                 setLoading(true);
+                setError("");
                 const data = await getDonorProfile();
                 if (data.success) {
                     setProfile(data.data);
@@ -48,6 +49,19 @@ export default function DonorProfilePage() {
             if (data.success) {
                 setProfile(data.data);
                 setForm(data.data);
+
+                const storedUser = JSON.parse(
+                    localStorage.getItem("user") || "{}"
+                );
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        ...storedUser,
+                        ...data.data,
+                    })
+                );
+
                 setEditMode(false);
                 setSuccess("Profile updated successfully");
                 setTimeout(() => setSuccess(""), 3000);
@@ -92,7 +106,12 @@ export default function DonorProfilePage() {
                             Cancel
                         </button>
                         <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] transition disabled:opacity-60">
-                            <Save size={14} />
+                            {saving ? (
+                                <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                                <Save size={14} />
+                            )}
+
                             {saving ? "Saving..." : "Save"}
                         </button>
                     </div>
@@ -112,14 +131,34 @@ export default function DonorProfilePage() {
                             {label}
                         </label>
                         {editMode && !readOnly ? (
-                            <input
-                                type="text"
-                                value={form[key] || ""}
-                                onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#16A34A] transition"
-                            />
+                            key === "address" ? (
+                                <textarea
+                                    rows={3}
+                                    required
+                                    value={form[key] || ""}
+                                    onChange={(e) =>
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            [key]: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 resize-none outline-none focus:border-[#16A34A] transition"
+                                />
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={form[key] || ""}
+                                    onChange={(e) =>
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            [key]: e.target.value,
+                                        }))
+                                    }
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#16A34A] transition"
+                                />
+                            )
                         ) : (
-                            <p className="text-sm text-gray-800 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
+                            <p className="text-sm text-gray-800 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100 whitespace-pre-line">
                                 {profile?.[key] || "—"}
                             </p>
                         )}

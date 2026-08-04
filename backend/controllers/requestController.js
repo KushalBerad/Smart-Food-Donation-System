@@ -148,7 +148,10 @@ export const acceptRequest = async (req, res) => {
             });
         }
 
-        const request = await DonationRequest.findOne({ _id: id, donorId }).lean();
+        const request = await DonationRequest.findOne({
+            _id: id,
+            donorId,
+        }).lean();
 
         if (!request) {
             return res.status(404).json({
@@ -156,6 +159,10 @@ export const acceptRequest = async (req, res) => {
                 message: "Donation request not found or access denied",
             });
         }
+
+        const donation = await FoodDonation.findById(
+            request.donationId
+        ).select("foodName");
 
         if (request.status !== "pending") {
             return res.status(400).json({
@@ -176,15 +183,27 @@ export const acceptRequest = async (req, res) => {
 
         // 2. Update associated FoodDonation status to 'accepted'
         await FoodDonation.findByIdAndUpdate(request.donationId, {
-            status: "accepted"
+            status: "accepted",
+            acceptedNgoId: request.ngoId,
         });
-
+        await DonationRequest.updateMany(
+            {
+                donationId: request.donationId,
+                _id: { $ne: request._id },
+                status: "pending",
+            },
+            {
+                status: "rejected",
+                respondedAt: new Date(),
+            }
+        );
         // 3. Notify the NGO
         await Notification.create({
             userId: request.ngoId,
             type: "accepted",
             title: "Donation Request Accepted",
-            message: `Your request for ${request.donationId.foodName || "food items"} has been accepted by the donor.`,
+            message: `Your request for ${donation?.foodName || "food items"
+                } has been accepted by the donor.`,
         });
 
         return res.status(200).json({
@@ -221,6 +240,7 @@ export const confirmPickup = async (req, res) => {
         // Find request and ensure it belongs to the authenticated NGO
         const request = await DonationRequest.findById(id).lean();
 
+
         if (!request) {
             return res.status(404).json({
                 success: false,
@@ -246,6 +266,13 @@ export const confirmPickup = async (req, res) => {
         const updatedRequest = await DonationRequest.findByIdAndUpdate(
             id,
             { pickupConfirmed: true },
+            { new: true }
+        );
+        await FoodDonation.findByIdAndUpdate(
+            request.donationId,
+            {
+                status: "picked_up",
+            },
             { new: true }
         );
 
@@ -286,12 +313,16 @@ export const rejectRequest = async (req, res) => {
 
         const request = await DonationRequest.findOne({ _id: id, donorId }).lean();
 
+
         if (!request) {
             return res.status(404).json({
                 success: false,
                 message: "Donation request not found or access denied",
             });
         }
+        const donation = await FoodDonation.findById(
+            request.donationId
+        ).select("foodName");
 
         if (request.status !== "pending") {
             return res.status(400).json({
@@ -329,7 +360,8 @@ export const rejectRequest = async (req, res) => {
             userId: request.ngoId,
             type: "rejected",
             title: "Donation Request Rejected",
-            message: `Your request for ${request.donationId.foodName || "food items"} has been rejected by the donor.`,
+            message: `Your request for ${donation?.foodName || "food items"
+                } has been rejected by the donor.`,
         });
 
         return res.status(200).json({
