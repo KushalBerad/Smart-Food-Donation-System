@@ -19,6 +19,8 @@ import MyDonations from "../pages/donor/MyDonations";
 import Reports from "../pages/donor/Reports";
 import DonorRequestDetails from "../pages/donor/RequestDetails";
 import Requests from "../pages/donor/Requests";
+import DonorDonationDetails from "../pages/donor/DonationDetails";
+
 
 
 // NGO Pages
@@ -106,7 +108,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <DonationDetails />
+                               <DonorDonationDetails />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
