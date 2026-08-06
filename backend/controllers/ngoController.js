@@ -31,8 +31,11 @@ export const getAvailableDonations = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Base filter: only available donations (platform-wide, no donorId filter)
-        const filter = { status: "available" };
+        // Base filter: only open donations with remaining quantity (platform-wide, no donorId filter)
+        const filter = {
+            status: { $in: ["available", "requested", "accepted"] },
+            remainingQuantity: { $gt: 0 },
+        };
 
         // Category filter
         const { category } = req.query;
@@ -79,6 +82,7 @@ export const getAvailableDonations = async (req, res) => {
             foodName: donation.foodName,
             category: donation.category,
             quantity: donation.quantity,
+            remainingQuantity: donation.remainingQuantity ?? 0,
             preparedAt: donation.preparedAt,
             expiryAt: donation.expiryAt,
             pickupAddress: donation.pickupAddress,
@@ -485,7 +489,7 @@ export const createDonationRequest = async (req, res) => {
             });
         }
 
-        // Verify donation exists and is available
+        // Verify donation exists and is still open for claiming
         const donation = await FoodDonation.findById(donationId).lean();
 
         if (!donation) {
@@ -495,10 +499,27 @@ export const createDonationRequest = async (req, res) => {
             });
         }
 
-        if (donation.status !== "available") {
+        if (!["available", "requested", "accepted"].includes(donation.status)) {
             return res.status(400).json({
                 success: false,
-                message: `Cannot request donation with status '${donation.status}'. It must be 'available'.`,
+                message: `Cannot request donation with status '${donation.status}'. The listing is no longer open.`,
+            });
+        }
+
+        // Parse and validate requested quantity against the remaining available quantity
+        const requestedQuantityInt = parseInt(requestedQuantity, 10);
+        if (isNaN(requestedQuantityInt) || requestedQuantityInt <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Requested quantity must be a positive number.",
+            });
+        }
+
+        const availableQuantity = donation.remainingQuantity ?? (parseInt(donation.quantity, 10) || 0);
+        if (requestedQuantityInt > availableQuantity) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot request ${requestedQuantityInt} meal(s). Only ${availableQuantity} meal(s) remain available for this donation.`,
             });
         }
 
@@ -526,7 +547,7 @@ export const createDonationRequest = async (req, res) => {
             status: "pending",
         });
 
-        // Update donation status to 'requested'
+        // Update donation status to 'requested' (keeps it visible while remaining > 0)
         await FoodDonation.findByIdAndUpdate(donationId, {
             status: "requested",
         });

@@ -40,11 +40,14 @@ export const createDonation = async (req, res) => {
             description,
         } = req.body;
 
+        const parsedQuantity = parseInt(quantity, 10) || 0;
+
         const donation = await FoodDonation.create({
             donorId,
             foodName,
             category,
             quantity,
+            remainingQuantity: parsedQuantity,
             preparedAt,
             expiryAt,
             pickupAddress,
@@ -372,46 +375,54 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        // Find the associated accepted donation request for this donation
-        const donationRequest = await DonationRequest.findOne({
+        // Find all accepted donation requests for this donation
+        const donationRequests = await DonationRequest.find({
             donationId: id,
             status: "accepted",
         }).lean();
 
-        if (!donationRequest) {
+        if (donationRequests.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "No accepted donation request found for this donation.",
+                message: "No accepted donation requests found for this donation.",
             });
         }
 
         // 1. Update FoodDonation status to 'completed'
         await FoodDonation.findByIdAndUpdate(id, { status: "completed" });
 
-        // 2. Update DonationRequest status to 'completed'
-        await DonationRequest.findByIdAndUpdate(donationRequest._id, {
-            status: "completed",
+        // 2. Update all accepted DonationRequest statuses to 'completed' and create history records
+        const historyPromises = donationRequests.map(async (request) => {
+            // Update request status
+            await DonationRequest.findByIdAndUpdate(request._id, {
+                status: "completed",
+            });
+
+            // Create a record in DonationHistory for each request
+            return DonationHistory.create({
+                requestId: request._id,
+                donationId: id,
+                donorId: donorId,
+                ngoId: request.ngoId,
+                fulfilledQuantity: request.fulfilledQuantity,
+                finalStatus: "completed",
+                completedAt: new Date(),
+            });
         });
 
-        // 3. Create a record in DonationHistory
-        await DonationHistory.create({
-            requestId: donationRequest._id,
-            donationId: id,
-            donorId: donorId,
-            ngoId: donationRequest.ngoId,
-            finalStatus: "completed",
-            completedAt: new Date(),
-        });
+        // Wait for all history records to be created
+        await Promise.all(historyPromises);
 
         return res.status(200).json({
             success: true,
             message: "Donation completed successfully.",
             data: {
                 donationId: id,
-                requestId: donationRequest._id,
+                requestIds: donationRequests.map(req => req._id),
                 pickupStatus: "Picked Up",
                 completionStatus: "Completed",
                 completedAt: new Date(),
+                requestsProcessed: donationRequests.length,
             },
         });
     } catch (error) {
@@ -450,7 +461,6 @@ export const getDonationStatus = async (req, res) => {
         });
 
     } catch (error) {
-
         return res.status(500).json({
             success: false,
             message:
@@ -458,7 +468,6 @@ export const getDonationStatus = async (req, res) => {
                     ? error.message
                     : "Internal Server Error",
         });
-
     }
 };
 

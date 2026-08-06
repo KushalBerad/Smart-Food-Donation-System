@@ -30,6 +30,11 @@ const foodDonationSchema = new mongoose.Schema(
             required: [true, "Quantity is required"],
             trim: true,
         },
+        remainingQuantity: {
+            type: Number,
+            default: 0,
+            min: [0, "Remaining quantity cannot be negative"],
+        },
         preparedAt: {
             type: Date,
             required: [true, "Preparation time is required"],

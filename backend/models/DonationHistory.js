@@ -22,6 +22,11 @@ const donationHistorySchema = new mongoose.Schema(
             ref: "User",
             required: [true, "NGO ID is required"],
         },
+        fulfilledQuantity: {
+            type: Number,
+            required: [true, "Fulfilled quantity is required"],
+            min: [0, "Fulfilled quantity cannot be negative"],
+        },
         finalStatus: {
             type: String,
             enum: ["completed", "expired", "cancelled"],

@@ -132,7 +132,7 @@ export const getRequestDetails = async (req, res) => {
 };
 
 /**
- * @desc    Accept an NGO donation request
+ * @desc    Accept an NGO donation request (supports partial fulfillment)
  * @route   PATCH /api/v1/donations/requests/:id/accept
  * @access  Private (Donor only)
  */
@@ -140,11 +140,28 @@ export const acceptRequest = async (req, res) => {
     try {
         const { id } = req.params;
         const donorId = req.user.id;
+        const { quantity } = req.body; // Quantity being accepted/fulfilled
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid request ID format",
+            });
+        }
+
+        // Validate quantity parameter
+        if (quantity === undefined || quantity === null || quantity === '') {
+            return res.status(400).json({
+                success: false,
+                message: "Quantity to accept is required",
+            });
+        }
+
+        const quantityToAccept = parseInt(quantity, 10);
+        if (isNaN(quantityToAccept) || quantityToAccept <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid quantity. Must be a positive number",
             });
         }
 
@@ -162,7 +179,7 @@ export const acceptRequest = async (req, res) => {
 
         const donation = await FoodDonation.findById(
             request.donationId
-        ).select("foodName");
+        ).select("foodName quantity remainingQuantity status");
 
         if (request.status !== "pending") {
             return res.status(400).json({
@@ -171,45 +188,87 @@ export const acceptRequest = async (req, res) => {
             });
         }
 
-        // 1. Update DonationRequest status
+        // Validate that requested quantity doesn't exceed what's available in the request
+        const requestedQuantityInt = parseInt(request.requestedQuantity, 10);
+        if (isNaN(requestedQuantityInt) || requestedQuantityInt <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid requested quantity in request",
+            });
+        }
+
+        if (quantityToAccept > requestedQuantityInt) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot accept ${quantityToAccept} meals. Requested quantity is only ${requestedQuantityInt} meals.`,
+            });
+        }
+
+        // Validate against the donation's currently available remaining quantity
+        const currentRemaining = donation.remainingQuantity ?? 0;
+        if (quantityToAccept > currentRemaining) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot accept ${quantityToAccept} meals. Only ${currentRemaining} meal(s) remain available for this donation.`,
+            });
+        }
+
+        // 1. Update DonationRequest status and set fulfilledQuantity to accepted quantity
         const updatedRequest = await DonationRequest.findByIdAndUpdate(
             id,
             {
                 status: "accepted",
-                respondedAt: new Date()
+                respondedAt: new Date(),
+                fulfilledQuantity: quantityToAccept
             },
             { new: true }
         );
 
-        // 2. Update associated FoodDonation status to 'accepted'
+        // 2. Decrement the donation's remaining quantity atomically
+        const newRemainingQuantity = currentRemaining - quantityToAccept;
+        const totalQuantity = parseInt(donation.quantity, 10);
+
+        // 3. Update FoodDonation status based on remaining quantity
+        let newStatus = donation.status; // Default to current status
+        if (newRemainingQuantity <= 0) {
+            newStatus = "completed";
+            // If donation is fully claimed, reject all other pending requests
+            await DonationRequest.updateMany(
+                {
+                    donationId: request.donationId,
+                    status: "pending"
+                },
+                {
+                    status: "rejected",
+                    respondedAt: new Date()
+                }
+            );
+        } else {
+            newStatus = "accepted"; // Remains open so other NGOs can still claim the remainder
+        }
+
         await FoodDonation.findByIdAndUpdate(request.donationId, {
-            status: "accepted",
-            acceptedNgoId: request.ngoId,
-        });
-        await DonationRequest.updateMany(
-            {
-                donationId: request.donationId,
-                _id: { $ne: request._id },
-                status: "pending",
-            },
-            {
-                status: "rejected",
-                respondedAt: new Date(),
-            }
-        );
-        // 3. Notify the NGO
+            status: newStatus,
+            remainingQuantity: Math.max(newRemainingQuantity, 0)
+        }, { new: true });
+
+        // 4. Notify the NGO
         await Notification.create({
             userId: request.ngoId,
             type: "accepted",
             title: "Donation Request Accepted",
-            message: `Your request for ${donation?.foodName || "food items"
+            message: `Your request for ${quantityToAccept} meal(s) of ${donation?.foodName || "food items"
                 } has been accepted by the donor.`,
         });
 
         return res.status(200).json({
             success: true,
             message: "Donation request accepted successfully",
-            data: updatedRequest,
+            data: {
+                ...updatedRequest._doc,
+                acceptedQuantity: quantityToAccept,
+                remainingQuantity: Math.max(newRemainingQuantity, 0)
+            }
         });
     } catch (error) {
         console.error("Error in acceptRequest:", error);
@@ -313,16 +372,12 @@ export const rejectRequest = async (req, res) => {
 
         const request = await DonationRequest.findOne({ _id: id, donorId }).lean();
 
-
         if (!request) {
             return res.status(404).json({
                 success: false,
                 message: "Donation request not found or access denied",
             });
         }
-        const donation = await FoodDonation.findById(
-            request.donationId
-        ).select("foodName");
 
         if (request.status !== "pending") {
             return res.status(400).json({
@@ -341,21 +396,39 @@ export const rejectRequest = async (req, res) => {
             { new: true }
         );
 
-        // 2. Check if other pending requests exist for this food item
-        const otherPendingRequests = await DonationRequest.countDocuments({
+        // 2. Recalculate total claimed quantity from all accepted requests for this donation
+        const acceptedRequests = await DonationRequest.find({
             donationId: request.donationId,
-            status: "pending",
-            _id: { $ne: id }
+            status: "accepted"
         });
 
-        // If no other pending requests, set food status back to 'available'
-        if (otherPendingRequests === 0) {
-            await FoodDonation.findByIdAndUpdate(request.donationId, {
-                status: "available"
-            });
+        let totalClaimed = 0;
+        for (const req of acceptedRequests) {
+            totalClaimed += parseInt(req.fulfilledQuantity, 10);
         }
 
-        // 3. Notify the NGO
+        const donation = await FoodDonation.findById(request.donationId);
+        const totalQuantity = parseInt(donation.quantity, 10);
+        const remainingQuantity = totalQuantity - totalClaimed;
+
+        // 3. Update FoodDonation status based on remaining quantity
+        let newStatus = donation.status; // Default to current status
+        if (remainingQuantity <= 0) {
+            newStatus = "completed";
+        } else if (totalClaimed > 0) {
+            // Some claims still exist, so the listing remains open/partially claimed
+            newStatus = "accepted";
+        } else {
+            // No claims remain - reset back to available so NGOs can browse it again
+            newStatus = "available";
+        }
+
+        await FoodDonation.findByIdAndUpdate(request.donationId, {
+            status: newStatus,
+            remainingQuantity: Math.max(remainingQuantity, 0)
+        });
+
+        // 4. Notify the NGO
         await Notification.create({
             userId: request.ngoId,
             type: "rejected",
