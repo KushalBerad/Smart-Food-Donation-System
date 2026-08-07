@@ -21,20 +21,20 @@ function HeroPanel() {
                     w-full
                     h-full
                     object-cover
+                    scale-100
+        opacity-0
                 "
             />
 
             {/* Dark Overlay */}
-            <div
-                className="
-                    absolute
-                    inset-0
-                    bg-gradient-to-br
-                    from-green-900/90
-                    via-green-800/80
-                    to-green-600/70
-                "
-            />
+            <div className="
+            absolute 
+            inset-0 
+            bg-gradient-to-br 
+            from-green-900/92 
+            via-green-800/88 
+            to-green-700/84
+            " />
 
             {/* Content */}
             <div

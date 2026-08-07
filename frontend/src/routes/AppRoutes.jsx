@@ -11,25 +11,25 @@ import Home from "../pages/public/Home";
 
 // Donor Pages
 import CreateDonation from "../pages/donor/CreateDonation";
-import Dashboard from "../pages/donor/Dashboard";
-import History from "../pages/donor/DonorHistory";
-import Profile from "../pages/donor/DonorProfile";
-import DonorHistoryDetails from "../pages/donor/HistoryDetails";
+import DonorDashboard from "../pages/donor/DonorDashboard";
+import DonorDonationDetails from "../pages/donor/DonorDonationDetails";
+import DonorHistory from "../pages/donor/DonorHistory";
+import DonorHistoryDetails from "../pages/donor/DonorHistoryDetails";
+import DonorProfile from "../pages/donor/DonorProfile";
+import DonorReports from "../pages/donor/DonorReports";
+import DonorRequestDetails from "../pages/donor/DonorRequestDetails";
+import DonorRequests from "../pages/donor/DonorRequests";
 import MyDonations from "../pages/donor/MyDonations";
-import Reports from "../pages/donor/Reports";
-import DonorRequestDetails from "../pages/donor/RequestDetails";
-import Requests from "../pages/donor/Requests";
-
 
 // NGO Pages
 import BrowseDonations from "../pages/ngo/BrowseDonations";
-import NGODashboard from "../pages/ngo/Dashboard";
-import DonationDetails from "../pages/ngo/DonationDetails";
-import NGOHistory from "../pages/ngo/History";
 import MyRequests from "../pages/ngo/MyRequests";
-import NGOProfile from "../pages/ngo/Profile";
-import NGOReports from "../pages/ngo/Reports";
-import NGORequestDetails from "../pages/ngo/RequestDetails";
+import NGODashboard from "../pages/ngo/NGODashboard";
+import NGODonationDetails from "../pages/ngo/NGODonationDetails";
+import NGOHistory from "../pages/ngo/NGOHistory";
+import NGOProfile from "../pages/ngo/NGOProfile";
+import NGOReports from "../pages/ngo/NGOReports";
+import NGORequestDetails from "../pages/ngo/NGORequestDetails";
 
 //Shared Pages
 import HelpSupport from "../pages/shared/HelpSupport";
@@ -73,7 +73,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <Dashboard />
+                                <DonorDashboard />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
@@ -106,7 +106,18 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <DonationDetails />
+                                <DonorDonationDetails />
+                            </DashboardLayout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/donor-donations/:id"
+                    element={
+                        <ProtectedRoute role="donor">
+                            <DashboardLayout>
+                                <DonorDonationDetails />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
@@ -117,7 +128,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <Requests />
+                                <DonorRequests />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
@@ -139,7 +150,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <Reports />
+                                <DonorReports />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
@@ -150,7 +161,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <History />
+                                <DonorHistory />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
@@ -172,7 +183,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="donor">
                             <DashboardLayout>
-                                <Profile />
+                                <DonorProfile />
                             </DashboardLayout>
                         </ProtectedRoute>
                     }
@@ -295,7 +306,7 @@ function AppRoutes() {
                     element={
                         <ProtectedRoute role="ngo">
                             <NGODashboardLayout>
-                                <DonationDetails />
+                                <NGODonationDetails />
                             </NGODashboardLayout>
                         </ProtectedRoute>
                     }

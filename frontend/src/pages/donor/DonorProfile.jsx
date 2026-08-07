@@ -83,50 +83,107 @@ export default function DonorProfilePage() {
 
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
-                <Loader2 size={28} className="animate-spin text-[#16A34A]" />
+            <div className="flex flex-1 min-h-screen items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2
+                        size={32}
+                        className="animate-spin text-[#16A34A]"
+                    />
+                    <p className="text-sm text-black-500">
+                        Loading profile...
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="flex-1 p-4 sm:p-6 space-y-6 bg-gray-50 min-h-screen">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between">
-                <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Donor Profile</h1>
-                    <p className="text-sm text-gray-500 mt-1">Manage your Personal details</p>
-                </div>
-                {!editMode ? (
-                    <button onClick={() => setEditMode(true)} className="px-4 py-2 text-sm font-medium text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] transition">
-                        Edit Profile
-                    </button>
-                ) : (
-                    <div className="flex gap-2">
-                        <button onClick={() => { setEditMode(false); setForm(profile); }} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
-                            Cancel
-                        </button>
-                        <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] transition disabled:opacity-60">
-                            {saving ? (
-                                <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                                <Save size={14} />
-                            )}
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 
-                            {saving ? "Saving..." : "Save"}
-                        </button>
+                    {/* Left */}
+                    <div className="flex items-center gap-5">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#16A34A]/10">
+                            <User
+                                size={30}
+                                className="text-[#16A34A]"
+                            />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold text-black-900">
+                                {profile?.name}
+                            </h1>
+                            <p className="mt-1 text-sm text-black-500">
+                                Donor Account
+                            </p>
+                            <p className="mt-1 text-sm text-[#16A34A] font-medium">
+                                {profile?.city || "City not added"}
+                            </p>
+                        </div>
                     </div>
-                )}
+
+                    {/* Right */}
+                    {!editMode ? (
+                        <button
+                            onClick={() => setEditMode(true)}
+                            className="rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D]"
+                        >
+                            Edit Profile
+                        </button>
+                    ) : (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setEditMode(false);
+                                    setForm(profile);
+                                }}
+                                className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-black-700 transition hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="flex items-center gap-2 rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D]"
+                            >
+
+                                {saving ? (
+                                    <Loader2
+                                        size={16}
+                                        className="animate-spin"
+                                    />
+                                ) : (
+                                    <Save size={16} />
+                                )}
+                                {saving ? "Saving..." : "Save Changes"}
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
+            {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm font-medium text-red-600">{error}</div>}
+            {success && <div className="bg-[#16A34A]/10 border border-[#16A34A]/20 rounded-xl px-4 py-3 text-sm font-medium text-[#16A34A]">{success}</div>}
 
-            {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">{error}</div>}
-            {success && <div className="bg-[#16A34A]/10 border border-[#16A34A]/20 rounded-xl p-3 text-sm text-[#16A34A]">{success}</div>}
-
-
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {fields.map(({ key, label, icon: Icon, readOnly }) => (
-                    <div key={key} className={key === "address" ? "sm:col-span-2" : ""}>
-                        <label className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+                    <div
+                        key={key}
+                        className={`
+                            border
+                            rounded-2xl
+                            bg-white
+                            border-gray-200
+                            shadow-sm
+                            transition
+                            hover:border-[#16A34A]/40
+                            hover:shadow-md
+                            ${key === "address" ? "md:col-span-2" : ""}
+                            p-5
+                            `}
+                    >
+                        <label className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-black-500">
                             <Icon size={14} />
                             {label}
                         </label>
@@ -142,7 +199,22 @@ export default function DonorProfilePage() {
                                             [key]: e.target.value,
                                         }))
                                     }
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 resize-none outline-none focus:border-[#16A34A] transition"
+                                    className="
+                                    resize-none
+                                    rounded-xl
+                                    border
+                                    border-gray-300
+                                    bg-white
+                                    px-4
+                                    py-3
+                                    text-sm
+                                    outline-none
+                                    transition
+                                    focus:border-[#16A34A]
+                                    focus:ring-2
+                                    focus:ring-[#16A34A]/10
+                                    w-full
+                                "
                                 />
                             ) : (
                                 <input
@@ -154,11 +226,38 @@ export default function DonorProfilePage() {
                                             [key]: e.target.value,
                                         }))
                                     }
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#16A34A] transition"
+                                    className="
+                                    rounded-xl
+                                    border
+                                    border-gray-300
+                                    bg-white
+                                    px-4
+                                    py-3
+                                    text-sm
+                                    outline-none
+                                    transition
+                                    focus:border-[#16A34A]
+                                    focus:ring-2
+                                    focus:ring-[#16A34A]/10
+                                    w-full
+                                "
                                 />
                             )
                         ) : (
-                            <p className="text-sm text-gray-800 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100 whitespace-pre-line">
+                            <p
+                                className="
+                                rounded-xl
+                                border
+                                border-gray-100
+                                bg-gray-50
+                                px-4
+                                py-3
+                                text-sm
+                                text-black-800
+                                whitespace-pre-line
+                                min-h-[48px]
+                            "
+                            >
                                 {profile?.[key] || "—"}
                             </p>
                         )}

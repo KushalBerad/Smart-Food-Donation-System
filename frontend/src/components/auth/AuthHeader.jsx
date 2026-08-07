@@ -30,7 +30,7 @@ function AuthHeader({
 
             {/* Heading */}
 
-            <div className="mt-10">
+            <div className="mt-3">
 
                 <h1
                     className="

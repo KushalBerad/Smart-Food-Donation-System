@@ -48,7 +48,7 @@ export default function Settings() {
 
                 {/* Notifications */}
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center rounded-xl border border-gray-100 p-4 transition hover:bg-gray-50">
 
                     <div className="flex gap-3 items-center">
                         <Bell className="text-green-600" />
@@ -73,7 +73,7 @@ export default function Settings() {
 
                 {/* Email */}
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center rounded-xl border border-gray-100 p-4 transition hover:bg-gray-50">
 
                     <div className="flex gap-3 items-center">
                         <Mail className="text-green-600" />
@@ -111,7 +111,9 @@ export default function Settings() {
                         name="theme"
                         value={settings.theme}
                         onChange={handleChange}
-                        className="w-full border rounded-xl px-4 py-3"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 
+                        focus:border-[#16A34A] focus:outline-none focus:ring-2 
+                        focus:ring-[#16A34A]/10"
                     >
                         <option value="light">Light</option>
                         <option value="dark" disabled>
@@ -134,7 +136,9 @@ export default function Settings() {
                         name="language"
                         value={settings.language}
                         onChange={handleChange}
-                        className="w-full border rounded-xl px-4 py-3"
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 
+                        focus:border-[#16A34A] focus:outline-none 
+                        focus:ring-2 focus:ring-[#16A34A]/10"
                     >
                         <option>English</option>
                         {/* <option disabled>Hindi (Coming Soon)</option> */}
@@ -145,7 +149,8 @@ export default function Settings() {
 
                 <button
                     onClick={handleSave}
-                    className="flex items-center gap-2 bg-[#16A34A] hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium"
+                    className="flex items-center gap-2 bg-[#16A34A] hover:bg-[#15803D] 
+                    text-white px-6 py-3 rounded-xl font-semibold"
                 >
                     <Save size={18} />
                     Save Changes

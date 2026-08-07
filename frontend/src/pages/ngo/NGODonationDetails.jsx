@@ -16,10 +16,6 @@ export default function DonationDetails() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchDonation();
-    }, []);
-
     const fetchDonation = async () => {
         try {
             setLoading(true);
@@ -39,6 +35,10 @@ export default function DonationDetails() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        fetchDonation();
+    }, []);
 
     const handleRequestDonation = async () => {
         if (!requestedQuantity.trim()) {
@@ -73,31 +73,62 @@ export default function DonationDetails() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2
-                    size={32}
-                    className="animate-spin text-[#16A34A]"
-                />
+            <div className="flex min-h-[60vh] items-center justify-center">
+
+                <div className="flex flex-col items-center gap-3">
+
+                    <Loader2
+                        size={32}
+                        className="animate-spin text-[#16A34A]"
+                    />
+
+                    <p className="text-sm text-gray-500">
+                        Loading donation details...
+                    </p>
+
+                </div>
+
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="p-6 text-center text-red-500">
-                {error}
+            <div className="flex min-h-[60vh] items-center justify-center">
+
+                <div className="rounded-2xl border border-red-100 bg-white p-8 shadow-sm">
+
+                    <p className="font-medium text-red-600">
+                        {error}
+                    </p>
+
+                </div>
+
             </div>
         );
     }
 
     return (
         <div className="flex-1 p-4 sm:p-6 bg-gray-50 min-h-screen">
+            <div className="mb-5">
+
+                <button
+                    onClick={() => navigate("/ngo/browse")}
+                    className="text-sm font-medium text-[#16A34A] transition hover:underline"
+                >
+                    ← Back to Browse Donations
+                </button>
+
+            </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
 
                 <h1 className="text-2xl font-bold text-gray-900 mb-6">
                     Donation Details
                 </h1>
+                <p className="mb-6 text-sm text-gray-500">
+                    Review donation details before submitting your request.
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -145,7 +176,7 @@ export default function DonationDetails() {
                     </div>
 
                 </div>
-                <div className="mt-8 border-t border-gray-200 pt-6">
+                <div className="mt-10 border-t border-gray-200 pt-6">
 
                     <h2 className="text-lg font-semibold text-gray-900 mb-4">
                         Request this Donation
@@ -163,7 +194,10 @@ export default function DonationDetails() {
                                 value={requestedQuantity}
                                 onChange={(e) => setRequestedQuantity(e.target.value)}
                                 placeholder="Example: 20 Meals"
-                                className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-green-500"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-2 
+                                outline-none focus:border-[#16A34A]
+                                focus:ring-2
+                                focus:ring-[#16A34A]/10"
                             />
                         </div>
 
@@ -177,14 +211,17 @@ export default function DonationDetails() {
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 placeholder="Add a note for the donor..."
-                                className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                                className="w-full rounded-lg border border-gray-300 px-4 py-2 
+                                outline-none focus:ring-2 focus:border-[#16A34A]
+                                focus:ring-[#16A34A]/10"
                             />
                         </div>
 
                         <button
                             onClick={handleRequestDonation}
                             disabled={submitting}
-                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium disabled:opacity-60"
+                            className="bg-[#16A34A] hover:bg-[#15803D]
+                            text-white w-full sm:w-auto px-6 py-3 rounded-lg font-semibold transition disabled:opacity-60"
                         >
                             {submitting ? "Submitting..." : "Request Donation"}
                         </button>

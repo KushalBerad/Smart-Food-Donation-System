@@ -71,8 +71,8 @@ export default function DonorHistory() {
                 <h1 className="text-2xl font-bold">
                     Donation History
                 </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                    View all completed donation activities
+                <p className="mt-1 text-sm text-gray-500">
+                    Review your donation history, completed requests and past activities.
                 </p>
             </div>
             <div className="flex gap-3">
@@ -83,9 +83,9 @@ export default function DonorHistory() {
                             setType(item);
                             setPage(1);
                         }}
-                        className={`px-4 py-2 rounded-xl text-sm font-medium transition ${type === item
+                        className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${type === item
                             ? "bg-[#16A34A] text-white"
-                            : "bg-white border border-gray-200"
+                            : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
                             }`}
                     >
                         {item.charAt(0).toUpperCase() + item.slice(1)}
@@ -108,7 +108,7 @@ export default function DonorHistory() {
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[700px]">
                             <thead>
-                                <tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-400">
+                                <tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 tracking-wide">
                                     <th className="py-3">
                                         Food
                                     </th>
@@ -133,9 +133,9 @@ export default function DonorHistory() {
                                 {history.map((item) => (
                                     <tr
                                         key={item._id}
-                                        className="border-b border-gray-50"
+                                        className="border-b border-gray-100 transition hover:bg-gray-50"
                                     >
-                                        <td className="py-4">
+                                        <td className="py-4 font-medium text-gray-900">
                                             {item.foodName}
                                         </td>
                                         <td>
@@ -149,7 +149,7 @@ export default function DonorHistory() {
                                         </td>
                                         <td>
                                             <span
-                                                className={`px-2.5 py-1 rounded-full text-xs capitalize ${statusBadge[item.status]
+                                                className={`px-3 py-1 rounded-full text-xs capitalize ${statusBadge[item.status]
                                                     }`}
                                             >
                                                 {item.status}
@@ -158,7 +158,22 @@ export default function DonorHistory() {
                                         <td className="text-right">
                                             <button
                                                 onClick={() => viewDetails(item._id)}
-                                                className="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm"
+                                                className="
+                                                        inline-flex
+                                                        items-center
+                                                        justify-center
+                                                        rounded-lg
+                                                        border
+                                                        border-[#16A34A]
+                                                        px-4
+                                                        py-2
+                                                        text-sm
+                                                        font-semibold
+                                                        text-[#16A34A]
+                                                        transition
+                                                        hover:bg-[#16A34A]
+                                                        hover:text-white
+                                                        "
                                             >
                                                 View
                                             </button>
@@ -176,7 +191,7 @@ export default function DonorHistory() {
                             onClick={() =>
                                 setPage(page - 1)
                             }
-                            className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                            className="px-4 py-2 rounded-xl border border-gray-200 bg-white disabled:opacity-50"
                         >
                             Previous
                         </button>
@@ -188,7 +203,7 @@ export default function DonorHistory() {
                             onClick={() =>
                                 setPage(page + 1)
                             }
-                            className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                            className="px-4 py-2 rounded-xl border border-gray-200 bg-white disabled:opacity-50"
                         >
                             Next
                         </button>

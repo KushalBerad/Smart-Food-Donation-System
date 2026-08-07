@@ -91,20 +91,20 @@ export const FIELD_CONFIG = {
                 span: 1
             },
             {
-                name: "address",
-                label: "Pickup Address",
-                placeholder: "Enter complete pickup address",
-                icon: MapPin,
-                required: true,
-                span: 2,
-            },
-            {
                 name: "orgName",
                 label: "Organization Name (Optional)",
                 placeholder: "e.g. Your Organization / Restaurant / Group",
                 icon: Building2,
                 required: false,
                 span: 1
+            },
+            {
+                name: "address",
+                label: "Pickup Address",
+                placeholder: "Enter complete pickup address",
+                icon: MapPin,
+                required: true,
+                span: 2,
             },
         ],
         note: "Organization name is optional. Individuals can register without it.",
@@ -176,20 +176,20 @@ export const FIELD_CONFIG = {
                 span: 1
             },
             {
+                name: "verificationDoc",
+                label: "Verification Document (Optional)",
+                placeholder: "Upload registration certificate (Optional)",
+                icon: Upload, required: false,
+                span: 1,
+                type: "file"
+            },
+            {
                 name: "address",
                 label: "NGO Address",
                 placeholder: "Enter complete NGO address",
                 icon: MapPin,
                 required: true,
                 span: 2,
-            },
-            {
-                name: "verificationDoc",
-                label: "Verification Document (Optional)",
-                placeholder: "Upload registration certificate (Optional)",
-                icon: Upload, required: false,
-                span: 2,
-                type: "file"
             },
         ],
         note: null,

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { User, Building2, Mail, Phone, MapPin, FileText, Loader2, Save } from "lucide-react";
+import { Building2, FileText, Loader2, Mail, MapPin, Phone, Save, User } from "lucide-react";
+import { useEffect, useState } from "react";
 import { getNGOProfile, updateNGOProfile } from "../../services/ngoService";
 
 export default function NGOProfilePage() {
@@ -39,7 +39,7 @@ export default function NGOProfilePage() {
         setProfile(data.data);
         setForm(data.data);
         setEditMode(false);
-        setSuccess("Profile updated successfully");
+        setSuccess("Profile updated successfully.");
         setTimeout(() => setSuccess(""), 3000);
       }
     } catch (err) {
@@ -61,8 +61,17 @@ export default function NGOProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 size={28} className="animate-spin text-[#16A34A]" />
+      <div className="flex flex-col items-center gap-3">
+
+        <Loader2
+          size={28}
+          className="animate-spin text-[#16A34A]"
+        />
+
+        <p className="text-sm text-gray-500">
+          Loading profile...
+        </p>
+
       </div>
     );
   }
@@ -72,18 +81,25 @@ export default function NGOProfilePage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">NGO Profile</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your organization details</p>
+          <p className="text-sm text-gray-500 mt-1">View and update your NGO information.</p>
         </div>
         {!editMode ? (
-          <button onClick={() => setEditMode(true)} className="px-4 py-2 text-sm font-medium text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] transition">
+          <button onClick={() => setEditMode(true)}
+            className="px-4 py-2 text-sm font-semibold
+          text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] transition">
             Edit Profile
           </button>
         ) : (
           <div className="flex gap-2">
-            <button onClick={() => { setEditMode(false); setForm(profile); }} className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition">
+            <button onClick={() => { setEditMode(false); setForm(profile); }}
+              className="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 
+            rounded-xl hover:bg-gray-200 transition">
               Cancel
             </button>
-            <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] transition disabled:opacity-60">
+            <button onClick={handleSave} disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold
+            text-white bg-[#16A34A] rounded-xl hover:bg-[#15803D] 
+            transition disabled:opacity-60">
               <Save size={14} />
               {saving ? "Saving..." : "Save"}
             </button>
@@ -91,17 +107,18 @@ export default function NGOProfilePage() {
         )}
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-600">{error}</div>}
-      {success && <div className="bg-[#16A34A]/10 border border-[#16A34A]/20 rounded-xl p-3 text-sm text-[#16A34A]">{success}</div>}
+      {error && <div className="bg-red-50 border border-red-200 
+      rounded-xl p-3 text-sm text-red-600">{error}</div>}
+      {success && <div className="bg-[#16A34A]/10 border border-[#16A34A]/20 
+      rounded-xl p-3 text-sm text-[#16A34A]">{success}</div>}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         {/* Verification badge */}
         <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-          <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full capitalize ${
-            profile?.verificationStatus === "verified" ? "bg-[#16A34A]/10 text-[#16A34A]" :
-            profile?.verificationStatus === "rejected" ? "bg-red-50 text-red-600" :
-            "bg-amber-50 text-amber-600"
-          }`}>
+          <span className={`inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${profile?.verificationStatus === "verified" ? "bg-[#16A34A]/10 text-[#16A34A]" :
+              profile?.verificationStatus === "rejected" ? "bg-red-50 text-red-600" :
+                "bg-amber-50 text-amber-600"
+            }`}>
             {profile?.verificationStatus || "pending"} verification
           </span>
         </div>
@@ -109,7 +126,8 @@ export default function NGOProfilePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {fields.map(({ key, label, icon: Icon, readOnly }) => (
             <div key={key} className={key === "address" ? "sm:col-span-2" : ""}>
-              <label className="flex items-center gap-2 text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="flex items-center gap-2 text-xs font-semibold 
+              text-gray-500 uppercase tracking-wide mb-1.5">
                 <Icon size={14} />
                 {label}
               </label>
@@ -118,7 +136,11 @@ export default function NGOProfilePage() {
                   type="text"
                   value={form[key] || ""}
                   onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-[#16A34A] transition"
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm 
+                  text-gray-800 outline-none focus:border-[#16A34A]
+                  focus:ring-2
+                  focus:ring-[#16A34A]/10
+                  transition"
                 />
               ) : (
                 <p className="text-sm text-gray-800 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">

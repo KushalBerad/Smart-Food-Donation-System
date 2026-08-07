@@ -1,6 +1,6 @@
 import { useState } from "react";
+import Sidebar from "../components/DonorSidebar";
 import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
 
 function DashboardLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

@@ -9,10 +9,6 @@ export default function NGOReports() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        fetchStatistics();
-    }, []);
-
     const fetchStatistics = async () => {
         try {
 
@@ -35,10 +31,24 @@ export default function NGOReports() {
         }
     };
 
+    useEffect(() => {
+        fetchStatistics();
+    }, []);
+
+
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[60vh]">
-                <Loader2 className="animate-spin text-green-600" size={32} />
+            <div className="flex flex-col items-center gap-3">
+
+                <Loader2
+                    size={28}
+                    className="animate-spin text-[#16A34A]"
+                />
+
+                <p className="text-sm text-gray-500">
+                    Loading reports...
+                </p>
+
             </div>
         );
     }
@@ -83,38 +93,48 @@ export default function NGOReports() {
     ];
 
     return (
-        <div className="flex-1 p-4 sm:p-6 bg-gray-50 min-h-screen">
+        <div className="flex-1 min-h-screen bg-gray-50 p-4 sm:p-6">
 
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">
-                    Reports & Impact
-                </h1>
+            <div className="space-y-6">
 
-                <p className="text-sm text-gray-500">
-                    Track your NGO impact.
-                </p>
-            </div>
+                {/* Header */}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
 
-                {cards.map((card) => (
+                    <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                        Reports &amp; Impact
+                    </h1>
 
-                    <div
-                        key={card.title}
-                        className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
-                    >
+                    <p className="mt-1 text-sm text-gray-500">
+                        Monitor your organization's donation requests and overall impact.
+                    </p>
 
-                        <p className="text-sm text-gray-500">
-                            {card.title}
-                        </p>
+                </div>
 
-                        <h2 className="mt-2 text-3xl font-bold text-green-600">
-                            {card.value}
-                        </h2>
+                {/* Statistics */}
 
-                    </div>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
 
-                ))}
+                    {cards.map((card) => (
+
+                        <div
+                            key={card.title}
+                            className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:shadow-md"
+                        >
+
+                            <p className="text-sm text-gray-500">
+                                {card.title}
+                            </p>
+
+                            <h2 className="mt-2 text-3xl font-bold text-[#16A34A]">
+                                {card.value}
+                            </h2>
+
+                        </div>
+
+                    ))}
+
+                </div>
 
             </div>
 

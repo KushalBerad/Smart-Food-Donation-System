@@ -123,8 +123,16 @@ export default function Notifications() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                Loading notifications...
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Clock
+                        size={28}
+                        className="animate-pulse text-[#16A34A]"
+                    />
+                    <p className="text-sm text-gray-500">
+                        Loading notifications...
+                    </p>
+                </div>
             </div>
         );
     }
@@ -155,7 +163,10 @@ export default function Notifications() {
                 <button
                     type="button"
                     onClick={markAllAsRead}
-                    className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl hover:bg-green-700"
+                    className="flex items-center gap-2 bg-[#16A34A] text-white px-4 py-2 rounded-xl 
+                    hover:bg-[#15803D]
+                    font-semibold
+                    transition"
                 >
                     <CheckCheck size={18} />
                     Mark all as read
@@ -180,7 +191,7 @@ export default function Notifications() {
                             onClick={() => markAsRead(item._id)}
                             className={`bg-white rounded-2xl shadow-sm border p-5 flex 
                                 justify-between items-start cursor-pointer 
-                                transition hover:shadow-md ${!item.isRead
+                                transition hover:shadow-md hover:border-[#16A34A] ${!item.isRead
                                     ? "border-[#16A34A]"
                                     : "border-gray-100"
                                 }`}
@@ -219,7 +230,10 @@ export default function Notifications() {
                                         e.stopPropagation();
                                         handleDelete(item._id);
                                     }}
-                                    className="text-red-500 hover:text-red-700"
+                                    className="text-red-500
+                                                transition
+                                                hover:scale-110
+                                                hover:text-red-700"
                                 >
                                     <Trash2 size={18} />
                                 </button>

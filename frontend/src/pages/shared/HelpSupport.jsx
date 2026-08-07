@@ -127,7 +127,10 @@ export default function HelpSupport() {
                             value={form.subject}
                             onChange={handleChange}
                             required
-                            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-600"
+                            className="w-full border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 
+                            focus:border-[#16A34A]                                      
+                            focus:ring-2
+                            focus:ring-[#16A34A]/10"
                         />
 
                         <textarea
@@ -137,13 +140,16 @@ export default function HelpSupport() {
                             value={form.message}
                             onChange={handleChange}
                             required
-                            className="w-full border rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-green-600"
+                            className="w-full border rounded-xl px-4 py-3 resize-none focus:outline-none focus:ring-2 
+                            focus:border-[#16A34A]                                      
+                            focus:ring-2
+                            focus:ring-[#16A34A]/10"
                         />
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="bg-[#16A34A] hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium transition disabled:opacity-50"
+                            className="bg-[#16A34A] hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold transition disabled:opacity-50"
                         >
                             {loading ? "Submitting..." : "Submit Ticket"}
                         </button>
@@ -247,7 +253,7 @@ export default function HelpSupport() {
 
                         <div
                             key={index}
-                            className="border rounded-xl"
+                            className="rounded-xl border border-gray-200 transition hover:border-[#16A34A]"
                         >
 
                             <button

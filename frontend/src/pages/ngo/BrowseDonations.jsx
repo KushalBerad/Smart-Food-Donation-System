@@ -58,7 +58,9 @@ export default function BrowseDonations() {
     <div className="flex-1 p-4 sm:p-6 space-y-6 bg-gray-50 min-h-screen">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Browse Donations</h1>
-        <p className="text-sm text-gray-500 mt-1">Find available food donations near you</p>
+        <p className="mt-1 text-sm text-gray-500">
+          Browse available food donations and request the ones your NGO needs.
+        </p>
       </div>
 
       {/* Search & Filter */}
@@ -74,7 +76,7 @@ export default function BrowseDonations() {
               className="flex-1 bg-transparent border-none outline-none text-sm text-gray-700"
             />
           </div>
-          <button type="submit" className="px-4 py-2 bg-[#16A34A] text-white text-sm font-medium rounded-xl hover:bg-[#15803D] transition">
+          <button type="submit" className="px-4 py-2 bg-[#16A34A] text-white text-sm font-semibold rounded-xl hover:bg-[#15803D] transition">
             Search
           </button>
         </form>
@@ -83,7 +85,9 @@ export default function BrowseDonations() {
           <select
             value={category}
             onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 outline-none"
+            className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 
+            text-sm text-gray-700 outline-none focus:border-[#16A34A] 
+            focus:ring-2 focus:ring-[#16A34A]/10"
           >
             <option value="all">All Categories</option>
             <option value="veg">Veg</option>
@@ -96,13 +100,27 @@ export default function BrowseDonations() {
       {/* Results */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={28} className="animate-spin text-[#16A34A]" />
+          <div className="flex flex-col items-center justify-center gap-3 py-12">
+
+            <Loader2
+              size={28}
+              className="animate-spin text-[#16A34A]"
+            />
+
+            <p className="text-sm text-gray-500">
+              Loading donations...
+            </p>
+
           </div>
         ) : error ? (
-          <div className="text-center py-12 text-red-500 text-sm">{error}</div>
+          <div className="rounded-xl border border-red-100 bg-red-50 py-6 
+          text-center text-sm font-medium text-red-600">
+            {error}
+          </div>
         ) : donations.length === 0 ? (
-          <div className="text-center py-12 text-gray-400 text-sm">No donations found.</div>
+          <div className="text-center py-12 text-gray-400 text-sm">
+            No donations match your current search or filter.
+          </div>
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -139,7 +157,22 @@ export default function BrowseDonations() {
                       <td className="py-3.5 text-right pr-2">
                         <button
                           onClick={() => navigate(`/ngo/donation/${d._id}`)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+                          className="
+                                inline-flex
+                                items-center
+                                gap-2
+                                rounded-lg
+                                border
+                                border-[#16A34A]
+                                px-4
+                                py-2
+                                text-sm
+                                font-semibold
+                                text-[#16A34A]
+                                transition
+                                hover:bg-[#16A34A]
+                                hover:text-white
+                                "
                         >
                           View Details
                         </button>

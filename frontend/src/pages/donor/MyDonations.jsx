@@ -1,4 +1,8 @@
-import { Eye } from "lucide-react";
+import {
+    Eye,
+    MapPin,
+    PlusCircle,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
@@ -12,15 +16,12 @@ export default function MyDonations() {
 
     useEffect(() => {
         let mounted = true;
-
         const loadDonations = async () => {
             try {
                 setLoading(true);
-
                 const { data } = await api.get(
                     "/donations/my-donations"
                 );
-
                 if (mounted) {
                     setDonations(data.data || []);
                 }
@@ -35,9 +36,7 @@ export default function MyDonations() {
                 }
             }
         };
-
         loadDonations();
-
         return () => {
             mounted = false;
         };
@@ -72,9 +71,10 @@ export default function MyDonations() {
 
                 <button
                     onClick={() => navigate("/create-donation")}
-                    className="rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D]"
+                    className="inline-flex items-center gap-2 rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D]"
                 >
-                    + Create Donation
+                    <PlusCircle size={18} />
+                    Create Donation
                 </button>
             </div>
 
@@ -141,15 +141,16 @@ export default function MyDonations() {
                                             : "bg-yellow-100 text-yellow-700"
                                             }`}
                                     >
-                                        {donation.status}
+                                        {donation.status.charAt(0).toUpperCase() +
+                                            donation.status.slice(1)}
                                     </span>
                                 </div>
 
                                 <button
                                     onClick={() => navigate(`/donations/${donation._id}`)}
                                     className="inline-flex items-center gap-2 rounded-xl border border-[#16A34A]
-            px-5 py-2.5 text-sm font-semibold text-[#16A34A]
-            hover:bg-[#16A34A] hover:text-white transition"
+                                                px-4 py-2 text-sm font-semibold text-[#16A34A]
+                                                hover:bg-[#16A34A] hover:text-white transition"
                                 >
                                     <Eye size={18} />
                                     View Details
@@ -158,14 +159,19 @@ export default function MyDonations() {
                             </div>
 
                             {/* Address */}
-                            <div className="mt-5 border-t border-gray-100 pt-4">
-                                <p className="text-xs uppercase text-gray-500">
-                                    Pickup Address
-                                </p>
-
-                                <p className="mt-1 font-medium text-gray-800">
-                                    {donation.pickupAddress}
-                                </p>
+                            <div className="mt-5 flex items-start gap-3 rounded-xl bg-gray-50 p-4">
+                                <MapPin
+                                    size={18}
+                                    className="mt-0.5 text-[#16A34A]"
+                                />
+                                <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        Pickup Address
+                                    </p>
+                                    <p className="mt-1 text-sm font-medium text-gray-800">
+                                        {donation.pickupAddress}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     ))}

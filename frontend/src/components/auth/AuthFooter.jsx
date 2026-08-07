@@ -13,10 +13,8 @@ function AuthFooter({
     return (
         <footer
             className="
-                mt-10
-                pt-8
-                border-t
-                border-gray-100
+                mt-3
+                pt-3
                 text-center
             "
         >

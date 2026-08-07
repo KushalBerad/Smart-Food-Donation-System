@@ -11,6 +11,7 @@ import {
 } from "../controllers/donationController.js";
 import {
     acceptRequest,
+    getDonationRequests,
     getPendingRequests,
     getRequestDetails,
     rejectRequest
@@ -57,6 +58,8 @@ router.get("/requests", protect, authorize("donor"), getPendingRequests);
 
 router.get("/requests/:id", protect, authorize("donor"), getRequestDetails);
 
+router.get("/:id/requests", protect, authorize("donor"), getDonationRequests);
+
 /**
  * @route   PATCH /api/v1/donations/requests/:id/accept
  * @desc    Accept an NGO donation request
@@ -83,12 +86,7 @@ router.get("/:id", protect, authorize("donor", "ngo"), getDonationById);
  * @desc    Get current donation status
  * @access  Private (Donor & NGO)
  */
-router.get(
-    "/:id/status",
-    protect,
-    authorize("donor", "ngo"),
-    getDonationStatus
-);
+router.get("/:id/status", protect, authorize("donor", "ngo"), getDonationStatus);
 
 /**
  * @route   PATCH /api/v1/donations/:id/complete
@@ -102,11 +100,6 @@ router.patch("/:id/complete", protect, authorize("donor"), completeDonation);
  * @desc    Update donation status
  * @access  Private (Donor)
  */
-router.patch(
-    "/:id/status",
-    protect,
-    authorize("donor"),
-    updateDonationStatus
-);
+router.patch("/:id/status", protect, authorize("donor"), updateDonationStatus);
 
 export default router;

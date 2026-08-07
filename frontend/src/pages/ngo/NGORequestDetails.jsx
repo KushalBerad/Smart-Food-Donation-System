@@ -8,7 +8,7 @@ const statusBadge = {
     pending: "bg-amber-50 text-amber-600",
     accepted: "bg-green-50 text-green-600",
     rejected: "bg-red-50 text-red-600",
-    completed: "bg-blue-50 text-blue-600",
+    completed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
 };
 
 export default function RequestDetails() {
@@ -17,10 +17,6 @@ export default function RequestDetails() {
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-
-    useEffect(() => {
-        fetchRequest();
-    }, []);
 
     const fetchRequest = async () => {
         try {
@@ -44,21 +40,43 @@ export default function RequestDetails() {
         }
     };
 
+    useEffect(() => {
+        fetchRequest();
+    }, []);
+
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[60vh]">
-                <Loader2
-                    className="animate-spin text-green-600"
-                    size={30}
-                />
+            <div className="flex min-h-[60vh] items-center justify-center">
+
+                <div className="flex flex-col items-center gap-3">
+
+                    <Loader2
+                        size={32}
+                        className="animate-spin text-[#16A34A]"
+                    />
+
+                    <p className="text-sm text-gray-500">
+                        Loading request details...
+                    </p>
+
+                </div>
+
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="p-6 text-center text-red-500">
-                {error}
+            <div className="flex min-h-[60vh] items-center justify-center">
+
+                <div className="rounded-2xl border border-red-100 bg-white p-8 shadow-sm">
+
+                    <p className="font-medium text-red-600">
+                        {error}
+                    </p>
+
+                </div>
+
             </div>
         );
     }
@@ -66,11 +84,26 @@ export default function RequestDetails() {
     return (
         <div className="flex-1 p-4 sm:p-6 bg-gray-50 min-h-screen">
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="mb-5">
+
+                <button
+                    onClick={() => window.history.back()}
+                    className="text-sm font-medium text-[#16A34A] transition hover:underline"
+                >
+                    ← Back to My Requests
+                </button>
+
+            </div>
+
+            <div className="bg-white rounded-2xl 
+            shadow-sm border border-gray-100 p-6 sm:p-8">
 
                 <h1 className="text-2xl font-bold mb-6">
                     Request Details
                 </h1>
+                <p className="mb-6 text-sm text-gray-500">
+                    Review the details and current status of your donation request.
+                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
@@ -132,7 +165,14 @@ export default function RequestDetails() {
                         </p>
 
                         <p className="font-semibold">
-                            {new Date(request.requestedAt).toLocaleString()}
+                            {new Date(request.requestedAt).toLocaleString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                                hour12: true,
+                            })}
                         </p>
                     </div>
 
@@ -144,7 +184,8 @@ export default function RequestDetails() {
                         Message
                     </p>
 
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="min-h-[100px] rounded-xl border border-gray-200 
+                                    bg-gray-50 p-4 text-sm text-gray-700">
                         {request.message || "No message provided."}
                     </div>
 

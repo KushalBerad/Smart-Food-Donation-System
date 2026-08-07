@@ -66,6 +66,62 @@ export const getPendingRequests = async (req, res) => {
     }
 };
 
+export const getDonationRequests = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const donorId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid donation ID.",
+            });
+        }
+
+        const donation = await FoodDonation.findOne({
+            _id: id,
+            donorId,
+        }).select("_id");
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found.",
+            });
+        }
+
+        const requests = await DonationRequest.find({
+            donationId: id,
+        })
+            .populate({
+                path: "ngoId",
+                select: "name organizationName city email phone",
+            })
+            .sort({
+                requestedAt: -1,
+            })
+            .lean();
+
+        return res.status(200).json({
+            success: true,
+            count: requests.length,
+            data: requests,
+        });
+
+    } catch (error) {
+        console.error(
+            "Error in getDonationRequests:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Failed to fetch donation requests.",
+        });
+    }
+};
+
 /**
  * @desc    Get detailed information of a specific donation request
  * @route   GET /api/v1/donations/requests/:id

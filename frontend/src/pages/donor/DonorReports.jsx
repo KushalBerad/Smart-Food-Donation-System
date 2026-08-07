@@ -40,19 +40,28 @@ export default function Reports() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-[60vh]">
-                <Loader2
-                    className="animate-spin text-green-600"
-                    size={32}
-                />
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="flex flex-col items-center gap-3">
+                    <Loader2
+                        size={32}
+                        className="animate-spin text-[#16A34A]"
+                    />
+                    <p className="text-sm text-gray-500">
+                        Loading impact statistics...
+                    </p>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="p-6 text-center text-red-500">
-                {error}
+            <div className="flex min-h-[60vh] items-center justify-center">
+                <div className="rounded-2xl border border-red-100 bg-white p-8 shadow-sm">
+                    <p className="font-medium text-red-600">
+                        {error}
+                    </p>
+                </div>
             </div>
         );
     }
@@ -93,24 +102,24 @@ export default function Reports() {
                 </h1>
 
                 <p className="text-sm text-gray-500 mt-1">
-                    Track your donation impact.
+                    Check your overall donation contribution and community impact.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
 
                 {cards.map((card) => (
 
                     <div
                         key={card.title}
-                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6"
+                        className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 transition hover:shadow-md"
                     >
 
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm font-medium text-gray-500">
                             {card.title}
                         </p>
 
-                        <h2 className="mt-2 text-3xl font-bold text-green-600">
+                        <h2 className="mt-2 text-3xl font-bold text-[#16A34A]">
                             {card.value}
                         </h2>
 
