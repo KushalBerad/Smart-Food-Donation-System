@@ -91,6 +91,17 @@ function AppRoutes() {
                 />
 
                 <Route
+                    path="/edit-donation/:id"
+                    element={
+                        <ProtectedRoute role="donor">
+                            <DashboardLayout>
+                                <CreateDonation />
+                            </DashboardLayout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
                     path="/my-donations"
                     element={
                         <ProtectedRoute role="donor">

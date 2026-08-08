@@ -543,6 +543,177 @@ export const updateDonationStatus = async (req, res) => {
 };
 
 /**
+ * @desc    Delete a donation
+ * @route   DELETE /api/v1/donations/:id
+ * @access  Private (Donor only)
+ */
+export const deleteDonation = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const donorId = req.user.id;
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid donation ID.",
+            });
+        }
+
+        // Find donation
+        const donation = await FoodDonation.findById(id);
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found.",
+            });
+        }
+
+        // Ownership check
+        if (donation.donorId.toString() !== donorId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized.",
+            });
+        }
+
+        // Prevent deletion after workflow has started
+        const blockedStatuses = [
+            "accepted",
+            "picked_up",
+            "completed",
+        ];
+
+        if (blockedStatuses.includes(donation.status)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "This donation cannot be deleted because it is already in progress.",
+            });
+        }
+
+        // Delete pending requests
+        await DonationRequest.deleteMany({
+            donationId: donation._id,
+        });
+
+        // Delete donation
+        await FoodDonation.findByIdAndDelete(id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Donation deleted successfully.",
+        });
+
+    } catch (error) {
+
+        console.error("Error deleting donation:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error.",
+        });
+
+    }
+};
+
+/**
+ * @desc    Update donation
+ * @route   PUT /api/v1/donations/:id
+ * @access  Private (Donor only)
+ */
+export const updateDonation = async (req, res) => {
+    try {
+
+        const { id } = req.params;
+        const donorId = req.user.id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid donation ID.",
+            });
+        }
+
+        const donation = await FoodDonation.findById(id);
+
+        if (!donation) {
+            return res.status(404).json({
+                success: false,
+                message: "Donation not found.",
+            });
+        }
+
+        if (donation.donorId.toString() !== donorId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: "Unauthorized.",
+            });
+        }
+
+        const blockedStatuses = [
+            "accepted",
+            "picked_up",
+            "completed",
+        ];
+
+        if (blockedStatuses.includes(donation.status)) {
+            return res.status(400).json({
+                success: false,
+                message:
+                    "This donation can no longer be edited.",
+            });
+        }
+
+        donation.foodName =
+            req.body.foodName ?? donation.foodName;
+
+        donation.category =
+            req.body.category ?? donation.category;
+
+        donation.quantity =
+            req.body.quantity ?? donation.quantity;
+
+        donation.preparedAt =
+            req.body.preparedAt ?? donation.preparedAt;
+
+        donation.pickupAddress =
+            req.body.pickupAddress ?? donation.pickupAddress;
+
+        donation.pickupTime =
+            req.body.pickupTime ?? donation.pickupTime;
+
+        donation.description =
+            req.body.description ?? donation.description;
+
+        const updatedDonation =
+            await donation.save();
+
+        return res.status(200).json({
+            success: true,
+            message:
+                "Donation updated successfully.",
+            data: updatedDonation,
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Error updating donation:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error.",
+        });
+
+    }
+};
+
+/**
  * @desc    Get single history item details
  * @route   GET /api/v1/donations/history/:id
  * @access  Private (Donor only)

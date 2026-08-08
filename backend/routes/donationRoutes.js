@@ -2,12 +2,14 @@ import express from "express";
 import {
     completeDonation,
     createDonation,
+    deleteDonation,
     getDonationById,
     getDonationStatus,
     getDonorHistory,
     getDonorHistoryById,
     getMyDonations,
-    updateDonationStatus
+    updateDonation,
+    updateDonationStatus,
 } from "../controllers/donationController.js";
 import {
     acceptRequest,
@@ -101,5 +103,9 @@ router.patch("/:id/complete", protect, authorize("donor"), completeDonation);
  * @access  Private (Donor)
  */
 router.patch("/:id/status", protect, authorize("donor"), updateDonationStatus);
+
+router.put("/:id", protect, authorize("donor"), updateDonation);
+
+router.delete("/:id", protect, authorize("donor"), deleteDonation);
 
 export default router;

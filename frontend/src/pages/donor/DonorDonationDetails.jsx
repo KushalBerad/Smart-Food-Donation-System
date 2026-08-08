@@ -9,6 +9,7 @@ import FoodInformationCard from "../../components/donation/FoodInformationCard";
 import PickupInformationCard from "../../components/donation/PickupInformationCard";
 
 import {
+    deleteDonation,
     getDonationById,
     getDonationRequests,
 } from "../../services/donationService";
@@ -74,23 +75,31 @@ export default function DonationDetails() {
         fetchDonationDetails();
     }, [id]);
 
-    // const handleEdit = (donation) => {
-    //     navigate(
-    //         `/edit-donation/${donation._id}`
-    //     );
-    // };
+    const handleEdit = (donation) => {
+        navigate(`/edit-donation/${donation._id}`);
+    };
 
-    const handleDelete = (donation) => {
+    const handleDelete = async (donation) => {
         const confirmed = window.confirm(
-            "Are you sure you want to delete this donation?"
+            "Are you sure you want to delete this donation?\n\nThis action cannot be undone."
         );
 
         if (!confirmed) return;
 
-        console.log(
-            "Delete Donation:",
-            donation._id
-        );
+        try {
+            const response = await deleteDonation(donation._id);
+            alert(
+                response.message ||
+                "Donation deleted successfully."
+            );
+            navigate("/my-donations");
+        } catch (error) {
+            console.error(error);
+            alert(
+                error.response?.data?.message ||
+                "Failed to delete donation."
+            );
+        }
     };
 
     if (loading) {
@@ -179,7 +188,7 @@ export default function DonationDetails() {
 
                 <DonationActions
                     donation={donation}
-                    // onEdit={handleEdit}
+                    onEdit={handleEdit}
                     onDelete={handleDelete}
                 />
 

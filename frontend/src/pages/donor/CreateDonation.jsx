@@ -1,6 +1,10 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../../services/api";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  createDonation,
+  getDonationById,
+  updateDonation,
+} from "../../services/donationService";
 
 const initialForm = {
   foodName: "",
@@ -24,11 +28,81 @@ const labelClass =
 export default function CreateDonation() {
 
   const navigate = useNavigate();
+
+  const { id } = useParams();
+
+  const isEditMode = Boolean(id);
+
   const [loading, setLoading] = useState(false);
 
-
-
   const [form, setForm] = useState(initialForm);
+
+  const [pageLoading, setPageLoading] = useState(isEditMode);
+
+  const fetchDonation = async () => {
+
+    if (!isEditMode) return;
+
+    try {
+
+      setPageLoading(true);
+
+      const response = await getDonationById(id);
+
+      const donation = response.data;
+
+      setForm({
+
+        foodName: donation.foodName || "",
+
+        foodType: donation.category || "",
+
+        quantity: donation.quantity || "",
+
+        preparedDate:
+          donation.preparedAt?.split("T")[0] || "",
+
+        preparedTime:
+          donation.preparedAt?.substring(11, 16) || "",
+
+        pickupAddress:
+          donation.pickupAddress || "",
+
+        pickupDate:
+          donation.pickupTime?.split("T")[0] || "",
+
+        pickupTime:
+          donation.pickupTime?.substring(11, 16) || "",
+
+        notes:
+          donation.description || "",
+
+      });
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        error.response?.data?.message ||
+        "Failed to load donation."
+      );
+
+      navigate("/my-donations");
+
+    } finally {
+
+      setPageLoading(false);
+
+    }
+
+  };
+
+  useEffect(() => {
+
+    fetchDonation();
+
+  }, [id]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -55,28 +129,59 @@ export default function CreateDonation() {
         description: form.notes,
       };
       console.log("Payload:", payload);
-      const response = await api.post("/donations/create", payload);
+      let response;
 
+      if (isEditMode) {
 
-      alert(response.data.message || "Donation created successfully.");
+        response = await updateDonation(id, payload);
 
-      setForm(initialForm);
+        alert(
+          response.message ||
+          "Donation updated successfully."
+        );
 
-      navigate("/dashboard");
+      } else {
+
+        response = await createDonation(payload);
+
+        alert(
+          response.message ||
+          "Donation created successfully."
+        );
+
+        setForm(initialForm);
+
+      }
+
+      navigate("/my-donations");
     } catch (error) {
       console.error("Full Error:", error);
 
-      console.log("Response Data:", error.response?.data);
-      console.log("Payload Sent:", payload);
-
-      alert(
+      const message =
         error.response?.data?.message ||
-        "Unable to create donation."
-      );
+        "Unable to save donation.";
+
+      alert(message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (pageLoading) {
+
+    return (
+
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+
+        <p className="text-gray-500">
+          Loading donation...
+        </p>
+
+      </div>
+
+    );
+
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 sm:py-8">
@@ -98,12 +203,15 @@ export default function CreateDonation() {
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
 
           <h1 className="text-3xl font-bold text-gray-900">
-            Create Donation
+            {isEditMode
+              ? "Edit Donation"
+              : "Create Donation"}
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">
-            Fill in the donation details below so verified NGOs can
-            discover, request and collect your food safely.
+            {isEditMode
+              ? "Update the donation details below."
+              : "Fill in the donation details below so verified NGOs can quickly discover, request and collect your food."}
           </p>
 
         </div>
@@ -354,8 +462,12 @@ export default function CreateDonation() {
               className="min-w-[190px] rounded-xl bg-[#16A34A] px-8 py-3 font-semibold text-white transition hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading
-                ? "Creating Donation..."
-                : "Create Donation"}
+                ? isEditMode
+                  ? "Updating Donation..."
+                  : "Creating Donation..."
+                : isEditMode
+                  ? "Update Donation"
+                  : "Create Donation"}
             </button>
 
           </div>

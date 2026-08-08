@@ -25,15 +25,17 @@ export default function DashboardHeader({
                 </p>
             </div>
 
-            <button
-                type="button"
-                onClick={onCreateDonation}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#15803D]"
-            >
-                <PlusCircle size={18} />
+            {onCreateDonation && (
+                <button
+                    type="button"
+                    onClick={onCreateDonation}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#15803D]"
+                >
+                    <PlusCircle size={18} />
 
-                {buttonText}
-            </button>
+                    {buttonText}
+                </button>
+            )}
 
         </div>
     );

@@ -94,3 +94,23 @@ export const updateDonationStatus = async (
 
     return response.data;
 };
+
+export const deleteDonation = async (donationId) => {
+    const response = await api.delete(
+        `/donations/${donationId}`
+    );
+
+    return response.data;
+};
+
+export const updateDonation = async (
+    donationId,
+    data
+) => {
+    const response = await api.put(
+        `/donations/${donationId}`,
+        data
+    );
+
+    return response.data;
+};
