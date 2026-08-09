@@ -342,7 +342,7 @@ export const getDonorHistory = async (req, res) => {
 };
 
 /**
- * @desc    Complete a donation workflow (Donor marks donation as finished)
+ * @desc    Complete a donation workflow after all accepted requests are picked up
  * @route   PATCH /api/v1/donations/:id/complete
  * @access  Private (Donor only)
  */
@@ -359,7 +359,10 @@ export const completeDonation = async (req, res) => {
         }
 
         // Verify donation belongs to the authenticated donor
-        const donation = await FoodDonation.findOne({ _id: id, donorId }).lean();
+        const donation = await FoodDonation.findOne({
+            _id: id,
+            donorId,
+        }).lean();
 
         if (!donation) {
             return res.status(404).json({
@@ -368,14 +371,7 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        if (donation.status !== "picked_up") {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot complete donation with status '${donation.status}'. It must be 'picked_up'.`,
-            });
-        }
-
-        // Find all accepted donation requests for this donation
+        // Find all accepted requests for this donation
         const donationRequests = await DonationRequest.find({
             donationId: id,
             status: "accepted",
@@ -388,21 +384,34 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        // 1. Update FoodDonation status to 'completed'
-        await FoodDonation.findByIdAndUpdate(id, { status: "completed" });
+        // Every accepted request must confirm pickup before
+        // the complete donation workflow can finish.
+        const pendingPickups = donationRequests.filter(
+            (request) => !request.pickupConfirmed
+        );
 
-        // 2. Update all accepted DonationRequest statuses to 'completed' and create history records
+        if (pendingPickups.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `${pendingPickups.length} accepted donation request(s) have not confirmed pickup yet.`,
+            });
+        }
+
+        // 1. Update FoodDonation status to completed
+        await FoodDonation.findByIdAndUpdate(id, {
+            status: "completed",
+        });
+
+        // 2. Complete all accepted requests and create history records
         const historyPromises = donationRequests.map(async (request) => {
-            // Update request status
             await DonationRequest.findByIdAndUpdate(request._id, {
                 status: "completed",
             });
 
-            // Create a record in DonationHistory for each request
             return DonationHistory.create({
                 requestId: request._id,
                 donationId: id,
-                donorId: donorId,
+                donorId,
                 ngoId: request.ngoId,
                 fulfilledQuantity: request.fulfilledQuantity,
                 finalStatus: "completed",
@@ -410,7 +419,6 @@ export const completeDonation = async (req, res) => {
             });
         });
 
-        // Wait for all history records to be created
         await Promise.all(historyPromises);
 
         return res.status(200).json({
@@ -418,7 +426,7 @@ export const completeDonation = async (req, res) => {
             message: "Donation completed successfully.",
             data: {
                 donationId: id,
-                requestIds: donationRequests.map(req => req._id),
+                requestIds: donationRequests.map((request) => request._id),
                 pickupStatus: "Picked Up",
                 completionStatus: "Completed",
                 completedAt: new Date(),
@@ -427,6 +435,7 @@ export const completeDonation = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in completeDonation:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to complete donation workflow.",

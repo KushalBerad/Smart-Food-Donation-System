@@ -16,8 +16,9 @@ const foodDonationSchema = new mongoose.Schema(
             type: String,
             required: [true, "Category is required"],
             enum: {
-                values: ["veg", "non-veg", "other"],
-                message: "Category must be either 'veg', 'non-veg', or 'other'",
+                values: ["veg", "non-veg", "bakery", "packaged", "other"],
+                message:
+                    "Category must be either 'veg', 'non-veg', 'bakery', 'packaged', or 'other'",
             },
         },
         acceptedNgoId: {

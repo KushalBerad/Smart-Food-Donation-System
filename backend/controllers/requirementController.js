@@ -12,30 +12,49 @@ export const createRequirement = async (req, res) => {
     try {
         const ngoId = req.user.id;
 
-        const { foodName, category, requiredQuantity, description } = req.body;
+        const {
+            foodName,
+            category,
+            requiredQuantity,
+            description,
+        } = req.body;
 
-        if (!foodName || !foodName.trim()) {
+        // Validate food name
+        if (!foodName || typeof foodName !== "string" || !foodName.trim()) {
             return res.status(400).json({
                 success: false,
                 message: "Food name is required.",
             });
         }
 
-        if (!category) {
+        // Validate category
+        const allowedCategories = [
+            "veg",
+            "non-veg",
+            "bakery",
+            "packaged",
+            "other",
+        ];
+
+        if (!allowedCategories.includes(category)) {
             return res.status(400).json({
                 success: false,
-                message: "Category is required.",
+                message:
+                    "Category must be one of: 'veg', 'non-veg', 'bakery', 'packaged', or 'other'.",
             });
         }
 
-        const reqQuantity = parseInt(requiredQuantity, 10);
-        if (isNaN(reqQuantity) || reqQuantity <= 0) {
+        // Validate required quantity
+        const reqQuantity = Number(requiredQuantity);
+
+        if (!Number.isInteger(reqQuantity) || reqQuantity <= 0) {
             return res.status(400).json({
                 success: false,
-                message: "Required quantity must be a positive number.",
+                message: "Required quantity must be a positive whole number.",
             });
         }
 
+        // Create the requirement with the full quantity initially remaining
         const requirement = await NGORequirement.create({
             ngoId,
             foodName: foodName.trim(),
@@ -43,7 +62,10 @@ export const createRequirement = async (req, res) => {
             requiredQuantity: reqQuantity,
             fulfilledQuantity: 0,
             remainingQuantity: reqQuantity,
-            description: description?.trim() || "",
+            description:
+                typeof description === "string"
+                    ? description.trim()
+                    : "",
             status: "open",
         });
 
@@ -54,6 +76,7 @@ export const createRequirement = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in createRequirement:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to create requirement.",
@@ -68,36 +91,50 @@ export const createRequirement = async (req, res) => {
  */
 export const getOpenRequirements = async (req, res) => {
     try {
-        // Parse and validate pagination query parameters
-        let page = parseInt(req.query.page, 10);
-        let limit = parseInt(req.query.limit, 10);
+        // Parse and validate pagination
+        let page = Number(req.query.page);
+        let limit = Number(req.query.limit);
 
-        if (isNaN(page) || page < 1) page = 1;
-        if (isNaN(limit) || limit < 1) limit = 10;
-        if (limit > 50) limit = 50;
+        if (!Number.isInteger(page) || page < 1) {
+            page = 1;
+        }
+
+        if (!Number.isInteger(limit) || limit < 1) {
+            limit = 10;
+        }
+
+        if (limit > 50) {
+            limit = 50;
+        }
 
         const skip = (page - 1) * limit;
 
-        // Base filter: only open requirements with remaining quantity
+        // Only requirements that can still receive offers
         const filter = {
             status: "open",
             remainingQuantity: { $gt: 0 },
         };
 
-        // Category filter
+        // Optional category filter
         const { category } = req.query;
+
         if (category && category !== "all") {
             filter.category = category;
         }
 
-        // Search filter: match foodName
+        // Optional food-name search
         const { search } = req.query;
-        if (search && search.trim()) {
-            filter.foodName = { $regex: search.trim(), $options: "i" };
+
+        if (typeof search === "string" && search.trim()) {
+            filter.foodName = {
+                $regex: search.trim(),
+                $options: "i",
+            };
         }
 
         const [totalCount, requirements] = await Promise.all([
             NGORequirement.countDocuments(filter),
+
             NGORequirement.find(filter)
                 .populate({
                     path: "ngoId",
@@ -109,21 +146,24 @@ export const getOpenRequirements = async (req, res) => {
                 .lean(),
         ]);
 
-        const formattedRequirements = requirements.map((req) => ({
-            _id: req._id,
-            foodName: req.foodName,
-            category: req.category,
-            requiredQuantity: req.requiredQuantity,
-            fulfilledQuantity: req.fulfilledQuantity,
-            remainingQuantity: req.remainingQuantity,
-            description: req.description,
-            status: req.status,
-            createdAt: req.createdAt,
+        const formattedRequirements = requirements.map((requirement) => ({
+            _id: requirement._id,
+            foodName: requirement.foodName,
+            category: requirement.category,
+            requiredQuantity: requirement.requiredQuantity,
+            fulfilledQuantity: requirement.fulfilledQuantity,
+            remainingQuantity: requirement.remainingQuantity,
+            description: requirement.description,
+            status: requirement.status,
+            createdAt: requirement.createdAt,
             ngo: {
-                _id: req.ngoId?._id || null,
-                organizationName: req.ngoId?.organizationName || req.ngoId?.name || "Unknown",
-                city: req.ngoId?.city || "Unknown",
-                phone: req.ngoId?.phone || "Unknown",
+                _id: requirement.ngoId?._id || null,
+                organizationName:
+                    requirement.ngoId?.organizationName ||
+                    requirement.ngoId?.name ||
+                    "Unknown",
+                city: requirement.ngoId?.city || "Unknown",
+                phone: requirement.ngoId?.phone || "Unknown",
             },
         }));
 
@@ -136,6 +176,7 @@ export const getOpenRequirements = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in getOpenRequirements:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to retrieve requirements.",
@@ -152,23 +193,37 @@ export const getMyRequirements = async (req, res) => {
     try {
         const ngoId = req.user.id;
 
-        let page = parseInt(req.query.page, 10);
-        let limit = parseInt(req.query.limit, 10);
-        if (isNaN(page) || page < 1) page = 1;
-        if (isNaN(limit) || limit < 1) limit = 10;
-        if (limit > 50) limit = 50;
+        // Parse and validate pagination
+        let page = Number(req.query.page);
+        let limit = Number(req.query.limit);
+
+        if (!Number.isInteger(page) || page < 1) {
+            page = 1;
+        }
+
+        if (!Number.isInteger(limit) || limit < 1) {
+            limit = 10;
+        }
+
+        if (limit > 50) {
+            limit = 50;
+        }
+
         const skip = (page - 1) * limit;
 
+        // Restrict results to requirements owned by this NGO
         const filter = { ngoId };
 
         // Optional status filter
         const { status } = req.query;
-        if (status) {
-            filter.status = status;
+
+        if (typeof status === "string" && status.trim()) {
+            filter.status = status.trim();
         }
 
         const [totalCount, requirements] = await Promise.all([
             NGORequirement.countDocuments(filter),
+
             NGORequirement.find(filter)
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -185,6 +240,7 @@ export const getMyRequirements = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in getMyRequirements:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to retrieve requirements.",
@@ -200,8 +256,8 @@ export const getMyRequirements = async (req, res) => {
 export const getRequirementDetails = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
 
+        // Validate requirement ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
@@ -209,6 +265,7 @@ export const getRequirementDetails = async (req, res) => {
             });
         }
 
+        // Fetch requirement and NGO details
         const requirement = await NGORequirement.findById(id)
             .populate({
                 path: "ngoId",
@@ -223,8 +280,10 @@ export const getRequirementDetails = async (req, res) => {
             });
         }
 
-        // Fetch offers associated with this requirement
-        const offers = await DonationOffer.find({ requirementId: id })
+        // Fetch all offers associated with this requirement
+        const offers = await DonationOffer.find({
+            requirementId: id,
+        })
             .populate({
                 path: "donorId",
                 select: "name organizationName city phone",
@@ -232,33 +291,38 @@ export const getRequirementDetails = async (req, res) => {
             .sort({ offeredAt: -1 })
             .lean();
 
-        const isOwner = requirement.ngoId?._id?.toString() === userId || requirement.ngoId.toString() === userId;
+        const formattedOffers = offers.map((offer) => ({
+            _id: offer._id,
+            offeredQuantity: offer.offeredQuantity,
+            message: offer.message,
+            status: offer.status,
+            offeredAt: offer.offeredAt,
+            respondedAt: offer.respondedAt,
+            donor: {
+                _id: offer.donorId?._id || null,
+                organizationName:
+                    offer.donorId?.organizationName ||
+                    offer.donorId?.name ||
+                    "Unknown",
+                city: offer.donorId?.city || "Unknown",
+                phone: offer.donorId?.phone || "Unknown",
+            },
+        }));
 
         return res.status(200).json({
             success: true,
             data: {
                 ...requirement,
-                offers: offers.map((offer) => ({
-                    _id: offer._id,
-                    offeredQuantity: offer.offeredQuantity,
-                    message: offer.message,
-                    status: offer.status,
-                    offeredAt: offer.offeredAt,
-                    respondedAt: offer.respondedAt,
-                    donor: {
-                        _id: offer.donorId?._id || null,
-                        organizationName: offer.donorId?.organizationName || offer.donorId?.name || "Unknown",
-                        city: offer.donorId?.city || "Unknown",
-                        phone: offer.donorId?.phone || "Unknown",
-                    },
-                })),
+                offers: formattedOffers,
             },
         });
     } catch (error) {
         console.error("Error in getRequirementDetails:", error);
+
         return res.status(500).json({
             success: false,
-            message: "Internal server error. Failed to retrieve requirement details.",
+            message:
+                "Internal server error. Failed to retrieve requirement details.",
         });
     }
 };
@@ -274,6 +338,7 @@ export const createOffer = async (req, res) => {
         const donorId = req.user.id;
         const { offeredQuantity, message } = req.body;
 
+        // Validate requirement ID
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
@@ -281,14 +346,17 @@ export const createOffer = async (req, res) => {
             });
         }
 
-        const quantity = parseInt(offeredQuantity, 10);
-        if (isNaN(quantity) || quantity <= 0) {
+        // Validate offered quantity
+        const quantity = Number(offeredQuantity);
+
+        if (!Number.isInteger(quantity) || quantity <= 0) {
             return res.status(400).json({
                 success: false,
-                message: "Offered quantity must be a positive number.",
+                message: "Offered quantity must be a positive whole number.",
             });
         }
 
+        // Fetch the requirement
         const requirement = await NGORequirement.findById(id).lean();
 
         if (!requirement) {
@@ -298,13 +366,19 @@ export const createOffer = async (req, res) => {
             });
         }
 
-        if (requirement.status !== "open") {
+        // Requirement must still be open and have quantity remaining
+        if (
+            requirement.status !== "open" ||
+            requirement.remainingQuantity <= 0
+        ) {
             return res.status(400).json({
                 success: false,
-                message: `Cannot offer to requirement with status '${requirement.status}'. It must be 'open'.`,
+                message:
+                    "This requirement is no longer accepting donation offers.",
             });
         }
 
+        // Do not allow an offer larger than the remaining requirement
         if (quantity > requirement.remainingQuantity) {
             return res.status(400).json({
                 success: false,
@@ -312,7 +386,7 @@ export const createOffer = async (req, res) => {
             });
         }
 
-        // Prevent duplicate pending offers from the same donor
+        // Prevent multiple pending offers from the same donor
         const existingOffer = await DonationOffer.findOne({
             requirementId: id,
             donorId,
@@ -322,20 +396,25 @@ export const createOffer = async (req, res) => {
         if (existingOffer) {
             return res.status(400).json({
                 success: false,
-                message: "You already have a pending offer for this requirement.",
+                message:
+                    "You already have a pending offer for this requirement.",
             });
         }
 
+        // Create the pending offer
         const offer = await DonationOffer.create({
             requirementId: id,
             ngoId: requirement.ngoId,
             donorId,
             offeredQuantity: quantity,
-            message: message?.trim() || "",
+            message:
+                typeof message === "string"
+                    ? message.trim()
+                    : "",
             status: "pending",
         });
 
-        // Notify the NGO
+        // Notify the NGO about the new offer
         await Notification.create({
             userId: requirement.ngoId,
             type: "offer",
@@ -350,6 +429,7 @@ export const createOffer = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in createOffer:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to create offer.",
@@ -363,119 +443,253 @@ export const createOffer = async (req, res) => {
  * @access  Private (NGO only)
  */
 export const acceptOffer = async (req, res) => {
+    const session = await mongoose.startSession();
+
     try {
         const { id, offerId } = req.params;
         const ngoId = req.user.id;
 
-        if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(offerId)) {
+        if (
+            !mongoose.Types.ObjectId.isValid(id) ||
+            !mongoose.Types.ObjectId.isValid(offerId)
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid requirement or offer ID format",
             });
         }
 
-        const requirement = await NGORequirement.findOne({ _id: id, ngoId }).lean();
+        let result;
 
-        if (!requirement) {
-            return res.status(404).json({
-                success: false,
-                message: "Requirement not found or access denied",
-            });
-        }
+        await session.withTransaction(async () => {
+            // 1. Verify that the requirement belongs to the authenticated NGO
+            const requirement = await NGORequirement.findOne({
+                _id: id,
+                ngoId,
+                status: "open",
+            })
+                .session(session)
+                .lean();
 
-        if (requirement.status !== "open") {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot accept offers for requirement with status '${requirement.status}'. It must be 'open'.`,
-            });
-        }
+            if (!requirement) {
+                const existingRequirement = await NGORequirement.findOne({
+                    _id: id,
+                    ngoId,
+                })
+                    .session(session)
+                    .select("status")
+                    .lean();
 
-        const offer = await DonationOffer.findOne({ _id: offerId, requirementId: id }).lean();
+                if (!existingRequirement) {
+                    const error = new Error(
+                        "Requirement not found or access denied"
+                    );
+                    error.statusCode = 404;
+                    throw error;
+                }
 
-        if (!offer) {
-            return res.status(404).json({
-                success: false,
-                message: "Offer not found for this requirement",
-            });
-        }
+                const error = new Error(
+                    `Cannot accept offers for requirement with status '${existingRequirement.status}'. It must be 'open'.`
+                );
+                error.statusCode = 400;
+                throw error;
+            }
 
-        if (offer.status !== "pending") {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot accept offer with status '${offer.status}'. It must be 'pending'.`,
-            });
-        }
+            // 2. Find the pending offer for this requirement
+            const offer = await DonationOffer.findOne({
+                _id: offerId,
+                requirementId: id,
+            })
+                .session(session)
+                .lean();
 
-        if (offer.offeredQuantity > requirement.remainingQuantity) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot accept ${offer.offeredQuantity} meal(s). Only ${requirement.remainingQuantity} meal(s) are still needed.`,
-            });
-        }
+            if (!offer) {
+                const error = new Error(
+                    "Offer not found for this requirement"
+                );
+                error.statusCode = 404;
+                throw error;
+            }
 
-        // 1. Mark the offer as accepted (this is the confirmed fulfillment transaction record)
-        await DonationOffer.findByIdAndUpdate(offerId, {
-            status: "accepted",
-            respondedAt: new Date(),
-        });
+            if (offer.status !== "pending") {
+                const error = new Error(
+                    `Cannot accept offer with status '${offer.status}'. It must be 'pending'.`
+                );
+                error.statusCode = 400;
+                throw error;
+            }
 
-        // 2. Update the requirement's fulfilled and remaining quantities
-        const newFulfilled = (requirement.fulfilledQuantity || 0) + offer.offeredQuantity;
-        const newRemaining = requirement.remainingQuantity - offer.offeredQuantity;
+            // 3. Validate the offered quantity
+            if (
+                !Number.isInteger(offer.offeredQuantity) ||
+                offer.offeredQuantity <= 0
+            ) {
+                const error = new Error(
+                    "Offer contains an invalid quantity."
+                );
+                error.statusCode = 400;
+                throw error;
+            }
 
-        if (newRemaining <= 0) {
-            // Requirement fully satisfied - mark completed and reject all other pending offers
-            await NGORequirement.findByIdAndUpdate(id, {
-                status: "completed",
-                fulfilledQuantity: requirement.requiredQuantity,
-                remainingQuantity: 0,
-            });
+            if (offer.offeredQuantity > requirement.remainingQuantity) {
+                const error = new Error(
+                    `Cannot accept ${offer.offeredQuantity} meal(s). Only ${requirement.remainingQuantity} meal(s) are still needed.`
+                );
+                error.statusCode = 400;
+                throw error;
+            }
 
-            await DonationOffer.updateMany(
+            // 4. Atomically accept the offer only if it is still pending
+            const updatedOffer = await DonationOffer.findOneAndUpdate(
                 {
+                    _id: offerId,
                     requirementId: id,
                     status: "pending",
                 },
                 {
-                    status: "rejected",
-                    respondedAt: new Date(),
+                    $set: {
+                        status: "accepted",
+                        respondedAt: new Date(),
+                    },
+                },
+                {
+                    new: true,
+                    session,
                 }
-            );
-        } else {
-            // Requirement remains partially fulfilled / open for more offers
-            await NGORequirement.findByIdAndUpdate(id, {
-                fulfilledQuantity: newFulfilled,
-                remainingQuantity: newRemaining,
-                status: "open",
-            });
-        }
+            ).lean();
 
-        // 3. Notify the donor
-        await Notification.create({
-            userId: offer.donorId,
-            type: "accepted",
-            title: "Offer Accepted",
-            message: `Your offer of ${offer.offeredQuantity} meal(s) for "${requirement.foodName}" has been accepted by the NGO.`,
+            if (!updatedOffer) {
+                const error = new Error(
+                    "This offer is no longer pending and cannot be accepted."
+                );
+                error.statusCode = 409;
+                throw error;
+            }
+
+            // 5. Atomically allocate the offered quantity from the requirement
+            const updatedRequirement =
+                await NGORequirement.findOneAndUpdate(
+                    {
+                        _id: id,
+                        ngoId,
+                        status: "open",
+                        remainingQuantity: {
+                            $gte: updatedOffer.offeredQuantity,
+                        },
+                    },
+                    {
+                        $inc: {
+                            fulfilledQuantity: updatedOffer.offeredQuantity,
+                            remainingQuantity: -updatedOffer.offeredQuantity,
+                        },
+                    },
+                    {
+                        new: true,
+                        session,
+                    }
+                ).lean();
+
+            if (!updatedRequirement) {
+                const error = new Error(
+                    "The requirement no longer has enough quantity available."
+                );
+                error.statusCode = 409;
+                throw error;
+            }
+
+            // 6. Automatically complete the requirement when fully fulfilled
+            let finalRequirement = updatedRequirement;
+
+            if (updatedRequirement.remainingQuantity === 0) {
+                finalRequirement = await NGORequirement.findOneAndUpdate(
+                    {
+                        _id: id,
+                        ngoId,
+                        status: "open",
+                        remainingQuantity: 0,
+                    },
+                    {
+                        $set: {
+                            status: "completed",
+                            fulfilledQuantity: updatedRequirement.requiredQuantity,
+                        },
+                    },
+                    {
+                        new: true,
+                        session,
+                    }
+                ).lean();
+
+                if (!finalRequirement) {
+                    const error = new Error(
+                        "Failed to complete the requirement."
+                    );
+                    error.statusCode = 500;
+                    throw error;
+                }
+
+                // 7. Automatically reject every other pending offer
+                await DonationOffer.updateMany(
+                    {
+                        requirementId: id,
+                        status: "pending",
+                    },
+                    {
+                        $set: {
+                            status: "rejected",
+                            respondedAt: new Date(),
+                        },
+                    },
+                    {
+                        session,
+                    }
+                );
+            }
+
+            // 8. Notify the donor inside the same transaction
+            await Notification.create(
+                [
+                    {
+                        userId: updatedOffer.donorId,
+                        type: "accepted",
+                        title: "Offer Accepted",
+                        message: `Your offer of ${updatedOffer.offeredQuantity} meal(s) for "${requirement.foodName}" has been accepted by the NGO.`,
+                    },
+                ],
+                { session }
+            );
+
+            result = {
+                offerId: updatedOffer._id,
+                requirementId: finalRequirement._id,
+                acceptedQuantity: updatedOffer.offeredQuantity,
+                fulfilledQuantity: finalRequirement.fulfilledQuantity,
+                remainingQuantity: finalRequirement.remainingQuantity,
+                requirementStatus: finalRequirement.status,
+            };
         });
 
         return res.status(200).json({
             success: true,
             message: "Offer accepted successfully.",
-            data: {
-                offerId,
-                requirementId: id,
-                acceptedQuantity: offer.offeredQuantity,
-                fulfilledQuantity: newFulfilled,
-                remainingQuantity: Math.max(newRemaining, 0),
-                requirementStatus: newRemaining <= 0 ? "completed" : "open",
-            },
+            data: result,
         });
     } catch (error) {
         console.error("Error in acceptOffer:", error);
+
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message,
+            });
+        }
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to accept offer.",
         });
+    } finally {
+        await session.endSession();
     }
 };
 
@@ -489,14 +703,24 @@ export const rejectOffer = async (req, res) => {
         const { id, offerId } = req.params;
         const ngoId = req.user.id;
 
-        if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(offerId)) {
+        // Validate IDs
+        if (
+            !mongoose.Types.ObjectId.isValid(id) ||
+            !mongoose.Types.ObjectId.isValid(offerId)
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Invalid requirement or offer ID format",
             });
         }
 
-        const requirement = await NGORequirement.findOne({ _id: id, ngoId }).lean();
+        // Verify that the requirement belongs to the authenticated NGO
+        const requirement = await NGORequirement.findOne({
+            _id: id,
+            ngoId,
+        })
+            .select("foodName")
+            .lean();
 
         if (!requirement) {
             return res.status(404).json({
@@ -505,46 +729,68 @@ export const rejectOffer = async (req, res) => {
             });
         }
 
-        const offer = await DonationOffer.findOne({ _id: offerId, requirementId: id }).lean();
+        // Atomically reject only a pending offer belonging to this requirement
+        const updatedOffer = await DonationOffer.findOneAndUpdate(
+            {
+                _id: offerId,
+                requirementId: id,
+                ngoId,
+                status: "pending",
+            },
+            {
+                $set: {
+                    status: "rejected",
+                    respondedAt: new Date(),
+                },
+            },
+            {
+                new: true,
+            }
+        ).lean();
 
-        if (!offer) {
-            return res.status(404).json({
-                success: false,
-                message: "Offer not found for this requirement",
-            });
-        }
+        if (!updatedOffer) {
+            const existingOffer = await DonationOffer.findOne({
+                _id: offerId,
+                requirementId: id,
+                ngoId,
+            })
+                .select("status")
+                .lean();
 
-        if (offer.status !== "pending") {
+            if (!existingOffer) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Offer not found for this requirement",
+                });
+            }
+
             return res.status(400).json({
                 success: false,
-                message: `Cannot reject offer with status '${offer.status}'. It must be 'pending'.`,
+                message: `Cannot reject offer with status '${existingOffer.status}'. It must be 'pending'.`,
             });
         }
 
-        // 1. Mark the offer as rejected
-        await DonationOffer.findByIdAndUpdate(offerId, {
-            status: "rejected",
-            respondedAt: new Date(),
-        });
-
-        // 2. Notify the donor
+        // Notify the donor
         await Notification.create({
-            userId: offer.donorId,
+            userId: updatedOffer.donorId,
             type: "rejected",
             title: "Offer Rejected",
-            message: `Your offer of ${offer.offeredQuantity} meal(s) for "${requirement.foodName}" has been rejected by the NGO.`,
+            message: `Your offer of ${updatedOffer.offeredQuantity} meal(s) for "${requirement.foodName}" has been rejected by the NGO.`,
         });
 
         return res.status(200).json({
             success: true,
             message: "Offer rejected successfully.",
             data: {
-                offerId,
-                requirementId: id,
+                offerId: updatedOffer._id,
+                requirementId: updatedOffer.requirementId,
+                status: updatedOffer.status,
+                respondedAt: updatedOffer.respondedAt,
             },
         });
     } catch (error) {
         console.error("Error in rejectOffer:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to reject offer.",
