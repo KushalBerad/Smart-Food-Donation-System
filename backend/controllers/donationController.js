@@ -40,11 +40,14 @@ export const createDonation = async (req, res) => {
             description,
         } = req.body;
 
+        const parsedQuantity = parseInt(quantity, 10) || 0;
+
         const donation = await FoodDonation.create({
             donorId,
             foodName,
             category,
             quantity,
+            remainingQuantity: parsedQuantity,
             preparedAt,
             expiryAt,
             pickupAddress,
@@ -339,7 +342,7 @@ export const getDonorHistory = async (req, res) => {
 };
 
 /**
- * @desc    Complete a donation workflow (Donor marks donation as finished)
+ * @desc    Complete a donation workflow after all accepted requests are picked up
  * @route   PATCH /api/v1/donations/:id/complete
  * @access  Private (Donor only)
  */
@@ -356,7 +359,10 @@ export const completeDonation = async (req, res) => {
         }
 
         // Verify donation belongs to the authenticated donor
-        const donation = await FoodDonation.findOne({ _id: id, donorId }).lean();
+        const donation = await FoodDonation.findOne({
+            _id: id,
+            donorId,
+        }).lean();
 
         if (!donation) {
             return res.status(404).json({
@@ -365,57 +371,71 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        if (donation.status !== "picked_up") {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot complete donation with status '${donation.status}'. It must be 'picked_up'.`,
-            });
-        }
-
-        // Find the associated accepted donation request for this donation
-        const donationRequest = await DonationRequest.findOne({
+        // Find all accepted requests for this donation
+        const donationRequests = await DonationRequest.find({
             donationId: id,
             status: "accepted",
         }).lean();
 
-        if (!donationRequest) {
+        if (donationRequests.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "No accepted donation request found for this donation.",
+                message: "No accepted donation requests found for this donation.",
             });
         }
 
-        // 1. Update FoodDonation status to 'completed'
-        await FoodDonation.findByIdAndUpdate(id, { status: "completed" });
+        // Every accepted request must confirm pickup before
+        // the complete donation workflow can finish.
+        const pendingPickups = donationRequests.filter(
+            (request) => !request.pickupConfirmed
+        );
 
-        // 2. Update DonationRequest status to 'completed'
-        await DonationRequest.findByIdAndUpdate(donationRequest._id, {
+        if (pendingPickups.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `${pendingPickups.length} accepted donation request(s) have not confirmed pickup yet.`,
+            });
+        }
+
+        // 1. Update FoodDonation status to completed
+        await FoodDonation.findByIdAndUpdate(id, {
             status: "completed",
         });
 
-        // 3. Create a record in DonationHistory
-        await DonationHistory.create({
-            requestId: donationRequest._id,
-            donationId: id,
-            donorId: donorId,
-            ngoId: donationRequest.ngoId,
-            finalStatus: "completed",
-            completedAt: new Date(),
+        // 2. Complete all accepted requests and create history records
+        const historyPromises = donationRequests.map(async (request) => {
+            await DonationRequest.findByIdAndUpdate(request._id, {
+                status: "completed",
+            });
+
+            return DonationHistory.create({
+                requestId: request._id,
+                donationId: id,
+                donorId,
+                ngoId: request.ngoId,
+                fulfilledQuantity: request.fulfilledQuantity,
+                finalStatus: "completed",
+                completedAt: new Date(),
+            });
         });
+
+        await Promise.all(historyPromises);
 
         return res.status(200).json({
             success: true,
             message: "Donation completed successfully.",
             data: {
                 donationId: id,
-                requestId: donationRequest._id,
+                requestIds: donationRequests.map((request) => request._id),
                 pickupStatus: "Picked Up",
                 completionStatus: "Completed",
                 completedAt: new Date(),
+                requestsProcessed: donationRequests.length,
             },
         });
     } catch (error) {
         console.error("Error in completeDonation:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to complete donation workflow.",
@@ -450,7 +470,6 @@ export const getDonationStatus = async (req, res) => {
         });
 
     } catch (error) {
-
         return res.status(500).json({
             success: false,
             message:
@@ -458,7 +477,6 @@ export const getDonationStatus = async (req, res) => {
                     ? error.message
                     : "Internal Server Error",
         });
-
     }
 };
 

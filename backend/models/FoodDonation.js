@@ -7,56 +7,80 @@ const foodDonationSchema = new mongoose.Schema(
             ref: "User",
             required: [true, "Donor ID is required"],
         },
+
         foodName: {
             type: String,
             required: [true, "Food name is required"],
             trim: true,
         },
+
         category: {
             type: String,
             required: [true, "Category is required"],
             enum: {
-                values: ["veg", "non-veg","bakery", "packaged", "other"],
+                values: ["veg", "non-veg", "bakery", "packaged", "other"],
                 message:
-"Category must be one of 'veg', 'non-veg', 'bakery', 'packaged', or 'other'"
+                    "Category must be either 'veg', 'non-veg', 'bakery', 'packaged', or 'other'",
             },
         },
+
         acceptedNgoId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             default: null,
         },
+
         quantity: {
             type: String,
             required: [true, "Quantity is required"],
             trim: true,
         },
+
+        remainingQuantity: {
+            type: Number,
+            default: 0,
+            min: [0, "Remaining quantity cannot be negative"],
+        },
+
         preparedAt: {
             type: Date,
             required: [true, "Preparation time is required"],
         },
+
         expiryAt: {
             type: Date,
             required: [true, "Expiry time is required"],
         },
+
         pickupAddress: {
             type: String,
             required: [true, "Pickup address is required"],
             trim: true,
         },
+
         pickupTime: {
             type: Date,
             required: [true, "Pickup time is required"],
         },
+
         description: {
             type: String,
             trim: true,
             default: "",
         },
+
         status: {
             type: String,
             enum: {
-                values: ["available", "requested", "accepted", "picked_up", "completed", "expired", "cancelled"],
+                values: [
+                    "available",
+                    "requested",
+                    "accepted",
+                    "picked_up",
+                    "completed",
+                    "expired",
+                    "cancelled",
+                ],
                 message: "Invalid status",
             },
             default: "available",

@@ -22,6 +22,11 @@ const donationRequestSchema = new mongoose.Schema(
             required: [true, "Requested quantity is required"],
             trim: true,
         },
+        fulfilledQuantity: {
+            type: Number,
+            default: 0,
+            min: 0
+        },
         message: {
             type: String,
             trim: true,

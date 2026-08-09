@@ -31,8 +31,11 @@ export const getAvailableDonations = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Base filter: only available donations (platform-wide, no donorId filter)
-        const filter = { status: "available" };
+        // Base filter: only open donations with remaining quantity (platform-wide, no donorId filter)
+        const filter = {
+            status: { $in: ["available", "requested", "accepted"] },
+            remainingQuantity: { $gt: 0 },
+        };
 
         // Category filter
         const { category } = req.query;
@@ -79,6 +82,7 @@ export const getAvailableDonations = async (req, res) => {
             foodName: donation.foodName,
             category: donation.category,
             quantity: donation.quantity,
+            remainingQuantity: donation.remainingQuantity ?? 0,
             preparedAt: donation.preparedAt,
             expiryAt: donation.expiryAt,
             pickupAddress: donation.pickupAddress,
@@ -113,7 +117,6 @@ export const getAvailableDonations = async (req, res) => {
  */
 export const getMyRequests = async (req, res) => {
     try {
-        // Ensure user is authenticated
         if (!req.user || !req.user.id) {
             return res.status(401).json({
                 success: false,
@@ -123,7 +126,6 @@ export const getMyRequests = async (req, res) => {
 
         const ngoId = req.user.id;
 
-        // Parse and validate pagination query parameters
         let page = parseInt(req.query.page, 10);
         let limit = parseInt(req.query.limit, 10);
 
@@ -133,26 +135,26 @@ export const getMyRequests = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        // Build filter: only requests belonging to this NGO
         const filter = { ngoId };
 
-        // Optional status filter
         const { status } = req.query;
+
         if (status) {
             filter.status = status;
         }
 
-        // Run count and query in parallel
         const [totalCount, requests] = await Promise.all([
             DonationRequest.countDocuments(filter),
+
             DonationRequest.find(filter)
                 .populate({
                     path: "donationId",
-                    select: "foodName quantity preparedAt expiryAt pickupAddress",
+                    select:
+                        "foodName category quantity remainingQuantity preparedAt expiryAt pickupAddress pickupTime status",
                 })
                 .populate({
                     path: "donorId",
-                    select: "name organizationName phone",
+                    select: "name organizationName phone city",
                 })
                 .sort({ requestedAt: -1 })
                 .skip(skip)
@@ -160,21 +162,41 @@ export const getMyRequests = async (req, res) => {
                 .lean(),
         ]);
 
-        // Map to the required response shape
-        const formattedRequests = requests.map((req) => ({
-            _id: req._id,
-            requestedQuantity: req.requestedQuantity,
-            status: req.status,
-            requestedAt: req.requestedAt,
+        const formattedRequests = requests.map((request) => ({
+            _id: request._id,
+
+            requestedQuantity: request.requestedQuantity,
+            fulfilledQuantity: request.fulfilledQuantity || 0,
+
+            status: request.status,
+            pickupConfirmed: request.pickupConfirmed || false,
+
+            requestedAt: request.requestedAt,
+            respondedAt: request.respondedAt || null,
+
             donation: {
-                _id: req.donationId?._id || null,
-                foodName: req.donationId?.foodName || "Unknown",
-                pickupAddress: req.donationId?.pickupAddress || "Unknown",
+                _id: request.donationId?._id || null,
+                foodName: request.donationId?.foodName || "Unknown",
+                category: request.donationId?.category || "other",
+                quantity: request.donationId?.quantity || "0",
+                remainingQuantity:
+                    request.donationId?.remainingQuantity ?? 0,
+                preparedAt: request.donationId?.preparedAt || null,
+                expiryAt: request.donationId?.expiryAt || null,
+                pickupAddress:
+                    request.donationId?.pickupAddress || "Unknown",
+                pickupTime: request.donationId?.pickupTime || null,
+                status: request.donationId?.status || "unknown",
             },
+
             donor: {
-                _id: req.donorId?._id || null,
-                organizationName: req.donorId?.organizationName || req.donorId?.name || "Unknown",
-                phone: req.donorId?.phone || "Unknown",
+                _id: request.donorId?._id || null,
+                organizationName:
+                    request.donorId?.organizationName ||
+                    request.donorId?.name ||
+                    "Unknown",
+                phone: request.donorId?.phone || "Unknown",
+                city: request.donorId?.city || "Unknown",
             },
         }));
 
@@ -187,6 +209,7 @@ export const getMyRequests = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in getMyRequests:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to retrieve requests.",
@@ -338,117 +361,115 @@ export const updateNGOProfile = async (req, res) => {
  */
 export const getNGODashboardStats = async (req, res) => {
     try {
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({
-                success: false,
-                message: "Not authorized. User context is missing.",
-            });
-        }
-
         const ngoId = req.user.id;
 
-        // Run all stat queries + recent data in parallel
         const [
-            availableDonationsCount,
-            myRequestsCount,
-            acceptedRequestsCount,
-            completedPickupsCount,
-            recentDonations,
+            totalRequests,
+            pendingRequests,
+            acceptedRequests,
+            completedPickups,
+            availableDonations,
             recentRequests,
-            user,
         ] = await Promise.all([
-            // Stat 1: Available donations platform-wide
-            FoodDonation.countDocuments({ status: "available" }),
+            DonationRequest.countDocuments({
+                ngoId,
+            }),
 
-            // Stat 2: Total requests submitted by this NGO
-            DonationRequest.countDocuments({ ngoId }),
+            DonationRequest.countDocuments({
+                ngoId,
+                status: "pending",
+            }),
 
-            // Stat 3: Accepted requests for this NGO
-            DonationRequest.countDocuments({ ngoId, status: "accepted" }),
+            DonationRequest.countDocuments({
+                ngoId,
+                status: "accepted",
+            }),
 
-            // Stat 4: Completed pickups for this NGO
-            DonationRequest.countDocuments({ ngoId, pickupConfirmed: true }),
+            DonationRequest.countDocuments({
+                ngoId,
+                status: "completed",
+            }),
 
-            // Recent available donations (top 4)
-            FoodDonation.find({ status: "available" })
-                .populate({
-                    path: "donorId",
-                    select: "organizationName name city",
-                })
-                .sort({ createdAt: -1 })
-                .limit(4)
-                .lean(),
+            FoodDonation.countDocuments({
+                status: {
+                    $in: ["available", "requested", "accepted"],
+                },
+                remainingQuantity: {
+                    $gt: 0,
+                },
+            }),
 
-            // Recent requests by this NGO (top 3)
-            DonationRequest.find({ ngoId })
+            DonationRequest.find({
+                ngoId,
+            })
                 .populate({
                     path: "donationId",
-                    select: "foodName pickupAddress pickupTime",
+                    select:
+                        "foodName category quantity remainingQuantity preparedAt expiryAt pickupAddress pickupTime status",
                 })
                 .populate({
                     path: "donorId",
-                    select: "organizationName name",
+                    select: "name organizationName phone city",
                 })
-                .sort({ requestedAt: -1 })
-                .limit(3)
+                .sort({
+                    requestedAt: -1,
+                })
+                .limit(5)
                 .lean(),
-
-            // User details for welcome message
-            User.findById(ngoId).select("name organizationName registrationNumber").lean(),
         ]);
 
-        // Format recent donations
-        const formattedDonations = recentDonations.map((d) => ({
-            _id: d._id,
-            foodName: d.foodName,
-            quantity: d.quantity,
-            expiryAt: d.expiryAt,
-            pickupAddress: d.pickupAddress,
-            donor: {
-                _id: d.donorId?._id || null,
-                organizationName: d.donorId?.organizationName || d.donorId?.name || "Unknown",
-                city: d.donorId?.city || "Unknown",
-            },
-        }));
+        const formattedRecentRequests = recentRequests.map((request) => ({
+            _id: request._id,
+            requestedQuantity: request.requestedQuantity,
+            fulfilledQuantity: request.fulfilledQuantity || 0,
+            status: request.status,
+            pickupConfirmed: request.pickupConfirmed || false,
+            requestedAt: request.requestedAt,
+            respondedAt: request.respondedAt || null,
 
-        // Format recent requests
-        const formattedRequests = recentRequests.map((r) => ({
-            _id: r._id,
-            status: r.status,
-            requestedAt: r.requestedAt,
-            pickupConfirmed: r.pickupConfirmed,
-            respondedAt: r.respondedAt,
             donation: {
-                _id: r.donationId?._id || null,
-                foodName: r.donationId?.foodName || "Unknown",
-                pickupTime: r.donationId?.pickupTime || null,
+                _id: request.donationId?._id || null,
+                foodName: request.donationId?.foodName || "Unknown",
+                category: request.donationId?.category || "other",
+                quantity: request.donationId?.quantity || "0",
+                remainingQuantity:
+                    request.donationId?.remainingQuantity ?? 0,
+                preparedAt: request.donationId?.preparedAt || null,
+                expiryAt: request.donationId?.expiryAt || null,
+                pickupAddress:
+                    request.donationId?.pickupAddress || "Unknown",
+                pickupTime: request.donationId?.pickupTime || null,
+                status: request.donationId?.status || "unknown",
             },
+
             donor: {
-                _id: r.donorId?._id || null,
-                organizationName: r.donorId?.organizationName || r.donorId?.name || "Unknown",
+                _id: request.donorId?._id || null,
+                organizationName:
+                    request.donorId?.organizationName ||
+                    request.donorId?.name ||
+                    "Unknown",
+                phone: request.donorId?.phone || "Unknown",
+                city: request.donorId?.city || "Unknown",
             },
         }));
 
         return res.status(200).json({
             success: true,
             stats: {
-                availableDonations: availableDonationsCount,
-                myRequests: myRequestsCount,
-                acceptedRequests: acceptedRequestsCount,
-                completedPickups: completedPickupsCount,
+                totalRequests,
+                pendingRequests,
+                acceptedRequests,
+                completedPickups,
+                availableDonations,
             },
-            recentDonations: formattedDonations,
-            recentRequests: formattedRequests,
-            ngo: {
-                name: user?.organizationName || user?.name || "NGO",
-                registrationNumber: user?.registrationNumber || "",
-            },
+            recentRequests: formattedRecentRequests,
         });
     } catch (error) {
         console.error("Error in getNGODashboardStats:", error);
+
         return res.status(500).json({
             success: false,
-            message: "Internal server error. Failed to retrieve dashboard stats.",
+            message: "Internal server error. Failed to retrieve dashboard data.",
         });
     }
 };
@@ -485,7 +506,7 @@ export const createDonationRequest = async (req, res) => {
             });
         }
 
-        // Verify donation exists and is available
+        // Verify donation exists and is still open for claiming
         const donation = await FoodDonation.findById(donationId).lean();
 
         if (!donation) {
@@ -495,10 +516,27 @@ export const createDonationRequest = async (req, res) => {
             });
         }
 
-        if (donation.status !== "available") {
+        if (!["available", "requested", "accepted"].includes(donation.status)) {
             return res.status(400).json({
                 success: false,
-                message: `Cannot request donation with status '${donation.status}'. It must be 'available'.`,
+                message: `Cannot request donation with status '${donation.status}'. The listing is no longer open.`,
+            });
+        }
+
+        // Parse and validate requested quantity against the remaining available quantity
+        const requestedQuantityInt = parseInt(requestedQuantity, 10);
+        if (isNaN(requestedQuantityInt) || requestedQuantityInt <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Requested quantity must be a positive number.",
+            });
+        }
+
+        const availableQuantity = donation.remainingQuantity ?? (parseInt(donation.quantity, 10) || 0);
+        if (requestedQuantityInt > availableQuantity) {
+            return res.status(400).json({
+                success: false,
+                message: `Cannot request ${requestedQuantityInt} meal(s). Only ${availableQuantity} meal(s) remain available for this donation.`,
             });
         }
 
@@ -526,10 +564,18 @@ export const createDonationRequest = async (req, res) => {
             status: "pending",
         });
 
-        // Update donation status to 'requested'
-        await FoodDonation.findByIdAndUpdate(donationId, {
-            status: "requested",
-        });
+        // Update donation status to 'requested' (keeps it visible while remaining > 0)
+        if (donation.status === "available") {
+            await FoodDonation.findByIdAndUpdate(
+                donationId,
+                {
+                    status: "requested",
+                },
+                {
+                    new: true,
+                }
+            );
+        }
 
         // Notify the donor
         await Notification.create({
