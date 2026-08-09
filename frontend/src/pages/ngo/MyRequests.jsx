@@ -56,16 +56,20 @@ export default function MyRequests() {
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="bg-gray-50 border border-gray-200 
-          rounded-xl px-3 py-2 text-sm text-gray-700 outline-none 
-          focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/10"
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(1);
+          }}
+          className="bg-gray-50 border border-gray-200
+    rounded-xl px-3 py-2 text-sm text-gray-700 outline-none
+    focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/10"
         >
           <option value="">All Status</option>
           <option value="pending">Pending</option>
           <option value="accepted">Accepted</option>
           <option value="rejected">Rejected</option>
           <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
 
@@ -112,7 +116,20 @@ export default function MyRequests() {
                       className="border-b border-gray-100 last:border-0 transition hover:bg-gray-50">
                       <td className="py-3.5 pl-2 font-medium text-gray-900">{req.donation?.foodName}</td>
                       <td className="py-3.5 text-gray-600">{req.donor?.organizationName}</td>
-                      <td className="py-3.5 text-gray-600">{req.requestedQuantity}</td>
+                      <td className="py-3.5 text-gray-600">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {req.fulfilledQuantity ?? req.requestedQuantity}
+                          </span>
+
+                          {req.fulfilledQuantity != null &&
+                            req.fulfilledQuantity !== req.requestedQuantity && (
+                              <span className="text-xs text-gray-400">
+                                Requested: {req.requestedQuantity}
+                              </span>
+                            )}
+                        </div>
+                      </td>
                       <td className="py-3.5 text-gray-600">{formatDate(req.requestedAt)}</td>
                       <td className="py-3.5">
                         <span className={`inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full capitalize ${statusBadge[req.status] || statusBadge.pending}`}>

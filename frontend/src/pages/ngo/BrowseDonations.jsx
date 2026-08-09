@@ -28,11 +28,15 @@ export default function BrowseDonations() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const fetchDonations = async () => {
+  const fetchDonations = async (pageOverride = page) => {
     try {
       setLoading(true);
       setError("");
-      const params = { page, limit: 10, category };
+      const params = {
+        page: pageOverride,
+        limit: 10,
+        category,
+      };
       if (search.trim()) params.search = search.trim();
       const data = await getAvailableDonations(params);
       if (data.success) {
@@ -51,7 +55,7 @@ export default function BrowseDonations() {
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
-    fetchDonations();
+    fetchDonations(1);
   };
 
   return (
@@ -92,6 +96,8 @@ export default function BrowseDonations() {
             <option value="all">All Categories</option>
             <option value="veg">Veg</option>
             <option value="non-veg">Non-Veg</option>
+            <option value="bakery">Bakery</option>
+            <option value="packaged">Packaged Food</option>
             <option value="other">Other</option>
           </select>
         </div>
@@ -151,7 +157,16 @@ export default function BrowseDonations() {
                         <span className="inline-flex items-center text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">{d.category}</span>
                       </td>
                       <td className="py-3.5 text-gray-600">{d.donor?.organizationName}</td>
-                      <td className="py-3.5 text-gray-600">{d.quantity}</td>
+                      <td className="py-3.5 text-gray-600">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {d.remainingQuantity ?? 0} remaining
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            of {d.quantity}
+                          </span>
+                        </div>
+                      </td>
                       <td className="py-3.5 text-gray-600">{d.donor?.city}</td>
                       <td className="py-3.5 text-gray-600">{formatDate(d.expiryAt)}</td>
                       <td className="py-3.5 text-right pr-2">

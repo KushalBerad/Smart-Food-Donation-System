@@ -184,6 +184,9 @@ export default function DonorDashboard() {
         onViewAll={() =>
           navigate("/requests")
         }
+        onViewRequest={(id) =>
+          navigate(`/requests/${id}`)
+        }
       />
 
       <ActiveDonations

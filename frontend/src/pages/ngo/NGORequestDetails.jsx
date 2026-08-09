@@ -2,13 +2,16 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { getRequestDetails } from "../../services/ngoService";
-
+import {
+    confirmPickup,
+    getRequestDetails,
+} from "../../services/ngoService";
 const statusBadge = {
-    pending: "bg-amber-50 text-amber-600",
-    accepted: "bg-green-50 text-green-600",
-    rejected: "bg-red-50 text-red-600",
+    pending: "bg-amber-50 text-amber-600 border border-amber-200",
+    accepted: "bg-green-50 text-green-600 border border-green-200",
+    rejected: "bg-red-50 text-red-600 border border-red-200",
     completed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    cancelled: "bg-gray-100 text-gray-500 border border-gray-200",
 };
 
 export default function RequestDetails() {
@@ -17,6 +20,7 @@ export default function RequestDetails() {
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [pickupSubmitting, setPickupSubmitting] = useState(false);
 
     const fetchRequest = async () => {
         try {
@@ -42,7 +46,27 @@ export default function RequestDetails() {
 
     useEffect(() => {
         fetchRequest();
-    }, []);
+    }, [id]);
+
+    const handleConfirmPickup = async () => {
+        try {
+            setPickupSubmitting(true);
+            setError("");
+
+            const data = await confirmPickup(id);
+
+            if (data.success) {
+                await fetchRequest();
+            }
+        } catch (err) {
+            setError(
+                err.response?.data?.message ||
+                "Failed to confirm pickup."
+            );
+        } finally {
+            setPickupSubmitting(false);
+        }
+    };
 
     if (loading) {
         return (
@@ -119,21 +143,30 @@ export default function RequestDetails() {
 
                     <div>
                         <p className="text-sm text-gray-500">
-                            Quantity Requested
+                            Quantity
                         </p>
 
                         <p className="font-semibold">
-                            {request.requestedQuantity}
+                            {request.fulfilledQuantity ?? request.requestedQuantity}
                         </p>
+
+                        {request.fulfilledQuantity != null &&
+                            request.fulfilledQuantity !== request.requestedQuantity && (
+                                <p className="mt-1 text-xs text-gray-400">
+                                    Requested: {request.requestedQuantity}
+                                </p>
+                            )}
                     </div>
 
                     <div>
                         <p className="text-sm text-gray-500">
-                            NGO
+                            Donor
                         </p>
 
                         <p className="font-semibold">
-                            {request.ngoId?.organizationName}
+                            {request.donorId?.organizationName ||
+                                request.donorId?.name ||
+                                "—"}
                         </p>
                     </div>
 
@@ -143,7 +176,7 @@ export default function RequestDetails() {
                         </p>
 
                         <p className="font-semibold">
-                            {request.ngoId?.phone}
+                            {request.donorId?.phone || "—"}
                         </p>
                     </div>
 
@@ -190,6 +223,49 @@ export default function RequestDetails() {
                     </div>
 
                 </div>
+
+                {request.status === "accepted" && !request.pickupConfirmed && (
+                    <div className="mt-8 border-t border-gray-200 pt-6">
+                        <div className="rounded-xl border border-green-100 bg-green-50 p-4">
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                Pickup Ready
+                            </h2>
+
+                            <p className="mt-1 text-sm text-gray-600">
+                                Confirm once your NGO has physically collected the food
+                                from the donor.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={handleConfirmPickup}
+                                disabled={pickupSubmitting}
+                                className="mt-4 rounded-lg bg-[#16A34A] px-6 py-3
+                font-semibold text-white transition
+                hover:bg-[#15803D]
+                disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {pickupSubmitting
+                                    ? "Confirming Pickup..."
+                                    : "Confirm Pickup"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {request.pickupConfirmed && (
+                    <div className="mt-8 border-t border-gray-200 pt-6">
+                        <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                            <h2 className="font-semibold text-emerald-800">
+                                Pickup Confirmed
+                            </h2>
+
+                            <p className="mt-1 text-sm text-emerald-700">
+                                Your NGO has confirmed that the donation was picked up.
+                            </p>
+                        </div>
+                    </div>
+                )}
 
             </div>
 

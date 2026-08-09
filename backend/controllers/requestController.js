@@ -159,34 +159,44 @@ export const getDonationRequests = async (req, res) => {
 export const getRequestDetails = async (req, res) => {
     try {
         const { id } = req.params;
-        const donorId = req.user.id;
+        const userId = req.user._id;
+        const userRole = req.user.role;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid request ID format",
+                message: "Invalid request ID",
             });
         }
 
-        const request = await DonationRequest.findOne({
-            _id: id,
-            donorId,
-        })
-            .populate({
-                path: "ngoId",
-                select: "name organizationName city email phone",
+        let request;
+
+        if (userRole === "donor") {
+            request = await DonationRequest.findOne({
+                _id: id,
+                donorId: userId,
             })
-            .populate({
-                path: "donationId",
-                select:
-                    "foodName category quantity remainingQuantity preparedAt expiryAt pickupAddress pickupTime description status",
+                .populate("donationId")
+                .populate("ngoId", "name organizationName phone");
+        } else if (userRole === "ngo") {
+            request = await DonationRequest.findOne({
+                _id: id,
+                ngoId: userId,
             })
-            .lean();
+                .populate("donationId")
+                .populate("ngoId", "name organizationName phone")
+                .populate("donorId", "name organizationName phone");
+        } else {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied",
+            });
+        }
 
         if (!request) {
             return res.status(404).json({
                 success: false,
-                message: "Donation request not found or access denied",
+                message: "Donation request not found",
             });
         }
 
@@ -195,11 +205,11 @@ export const getRequestDetails = async (req, res) => {
             data: request,
         });
     } catch (error) {
-        console.error("Error in getRequestDetails:", error);
+        console.error("Get Request Details Error:", error);
 
         return res.status(500).json({
             success: false,
-            message: "Internal server error. Failed to retrieve request details.",
+            message: "Failed to fetch request details",
         });
     }
 };

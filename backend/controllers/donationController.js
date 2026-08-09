@@ -358,11 +358,10 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        // Verify donation belongs to the authenticated donor
         const donation = await FoodDonation.findOne({
             _id: id,
             donorId,
-        }).lean();
+        });
 
         if (!donation) {
             return res.status(404).json({
@@ -371,23 +370,30 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        // Find all accepted requests for this donation
+        if (donation.status === "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "Donation is already completed.",
+            });
+        }
+
+        // Find all requests associated with this donation.
         const donationRequests = await DonationRequest.find({
             donationId: id,
-            status: "accepted",
         }).lean();
 
         if (donationRequests.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "No accepted donation requests found for this donation.",
+                message: "No donation requests found for this donation.",
             });
         }
 
-        // Every accepted request must confirm pickup before
-        // the complete donation workflow can finish.
+        // Every request that was accepted must have its pickup confirmed.
         const pendingPickups = donationRequests.filter(
-            (request) => !request.pickupConfirmed
+            (request) =>
+                request.status === "accepted" &&
+                !request.pickupConfirmed
         );
 
         if (pendingPickups.length > 0) {
@@ -397,40 +403,18 @@ export const completeDonation = async (req, res) => {
             });
         }
 
-        // 1. Update FoodDonation status to completed
+        // At this point all accepted requests have completed pickup.
         await FoodDonation.findByIdAndUpdate(id, {
             status: "completed",
         });
-
-        // 2. Complete all accepted requests and create history records
-        const historyPromises = donationRequests.map(async (request) => {
-            await DonationRequest.findByIdAndUpdate(request._id, {
-                status: "completed",
-            });
-
-            return DonationHistory.create({
-                requestId: request._id,
-                donationId: id,
-                donorId,
-                ngoId: request.ngoId,
-                fulfilledQuantity: request.fulfilledQuantity,
-                finalStatus: "completed",
-                completedAt: new Date(),
-            });
-        });
-
-        await Promise.all(historyPromises);
 
         return res.status(200).json({
             success: true,
             message: "Donation completed successfully.",
             data: {
                 donationId: id,
-                requestIds: donationRequests.map((request) => request._id),
-                pickupStatus: "Picked Up",
                 completionStatus: "Completed",
                 completedAt: new Date(),
-                requestsProcessed: donationRequests.length,
             },
         });
     } catch (error) {

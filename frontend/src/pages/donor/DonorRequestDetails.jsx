@@ -35,11 +35,12 @@ export default function RequestDetails() {
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [acceptQuantity, setAcceptQuantity] = useState("");
     const [error, setError] = useState("");
 
     useEffect(() => {
         fetchRequest();
-    }, []);
+    }, [id]);
 
     const fetchRequest = async () => {
         try {
@@ -59,9 +60,32 @@ export default function RequestDetails() {
         }
     };
     const handleAccept = async () => {
+        const quantity = Number(acceptQuantity);
+
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+            alert("Please enter a valid quantity.");
+            return;
+        }
+
+        const remainingQuantity = Number(
+            request?.donationId?.remainingQuantity
+        );
+
+        if (
+            Number.isFinite(remainingQuantity) &&
+            quantity > remainingQuantity
+        ) {
+            alert(
+                `Cannot allocate more than ${remainingQuantity} units.`
+            );
+            return;
+        }
+
         try {
             setProcessing(true);
-            const response = await acceptRequest(id);
+
+            const response = await acceptRequest(id, quantity);
+
             alert(response.message);
             navigate("/requests");
         } catch (err) {
@@ -135,7 +159,7 @@ export default function RequestDetails() {
                         {request?.status}
                     </span>
                 </div>
-                
+
                 {/* Donation Information */}
                 <div className="mb-8">
                     <h2 className="mb-5 border-b border-gray-100 pb-3 text-lg font-semibold text-gray-900">
@@ -157,7 +181,7 @@ export default function RequestDetails() {
                         <div>
                             <p className="text-sm text-gray-500">Available Quantity</p>
                             <p className="font-semibold">
-                                {request?.donationId?.quantity || "—"}
+                                {request?.donationId?.remainingQuantity ?? "—"}
                             </p>
                         </div>
                         <div>
@@ -209,10 +233,41 @@ export default function RequestDetails() {
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <p className="text-sm text-gray-500">Requested Quantity</p>
-                            <p className="font-semibold">
-                                {request?.requestedQuantity || "—"}
+                            <p className="text-sm text-gray-500">
+                                Requested Quantity
                             </p>
+
+                            <p className="font-semibold">
+                                {request?.requestedQuantity ?? "—"}
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-sm text-gray-500">
+                                Fulfill Quantity
+                            </p>
+
+                            <input
+                                type="number"
+                                min="1"
+                                max={request?.donationId?.remainingQuantity ?? undefined}
+                                step="1"
+                                value={acceptQuantity}
+                                onChange={(e) => setAcceptQuantity(e.target.value)}
+                                disabled={request?.status !== "pending" || processing}
+                                placeholder="Enter quantity"
+                                className="mt-1 w-full rounded-lg border border-gray-300
+        px-3 py-2 text-sm outline-none
+        focus:border-[#16A34A]
+        focus:ring-2 focus:ring-[#16A34A]/10
+        disabled:cursor-not-allowed disabled:bg-gray-100"
+                            />
+
+                            {request?.donationId?.remainingQuantity != null && (
+                                <p className="mt-1 text-xs text-gray-400">
+                                    Maximum available: {request.donationId.remainingQuantity}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <p className="text-sm text-gray-500">Requested On</p>

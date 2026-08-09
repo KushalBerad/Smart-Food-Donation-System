@@ -53,3 +53,9 @@ export const getRequestDetails = async (id) => {
     const response = await api.get(`/requests/${id}`);
     return response.data;
 };
+
+// Confirm pickup of an accepted donation request
+export const confirmPickup = async (id) => {
+    const response = await api.patch(`/requests/${id}/pickup`);
+    return response.data;
+};

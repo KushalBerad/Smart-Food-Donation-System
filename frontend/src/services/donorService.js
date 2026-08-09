@@ -17,9 +17,10 @@ export const getRequestDetails = async (id) => {
 };
 
 // Accept NGO request
-export const acceptRequest = async (id) => {
+export const acceptRequest = async (id, quantity) => {
     const response = await api.patch(
-        `/donations/requests/${id}/accept`
+        `/donations/requests/${id}/accept`,
+        { quantity }
     );
 
     return response.data;

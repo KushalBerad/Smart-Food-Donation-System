@@ -166,7 +166,10 @@ export const getMyRequests = async (req, res) => {
             _id: request._id,
 
             requestedQuantity: request.requestedQuantity,
-            fulfilledQuantity: request.fulfilledQuantity || 0,
+            fulfilledQuantity:
+                request.fulfilledQuantity > 0
+                    ? request.fulfilledQuantity
+                    : null,
 
             status: request.status,
             pickupConfirmed: request.pickupConfirmed || false,
@@ -363,6 +366,12 @@ export const getNGODashboardStats = async (req, res) => {
     try {
         const ngoId = req.user.id;
 
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const endOfToday = new Date(startOfToday);
+        endOfToday.setDate(endOfToday.getDate() + 1);
+
         const [
             totalRequests,
             pendingRequests,
@@ -370,6 +379,8 @@ export const getNGODashboardStats = async (req, res) => {
             completedPickups,
             availableDonations,
             recentRequests,
+            acceptedPickupRequests,
+            recentDonations,
         ] = await Promise.all([
             DonationRequest.countDocuments({
                 ngoId,
@@ -416,12 +427,83 @@ export const getNGODashboardStats = async (req, res) => {
                 })
                 .limit(5)
                 .lean(),
+
+            DonationRequest.find({
+                ngoId,
+                status: "accepted",
+                pickupConfirmed: false,
+            })
+                .populate({
+                    path: "donationId",
+                    select: "foodName pickupTime pickupAddress",
+                })
+                .lean(),
+
+            FoodDonation.find({
+                status: {
+                    $in: ["available", "requested", "accepted"],
+                },
+                remainingQuantity: {
+                    $gt: 0,
+                },
+            })
+                .populate({
+                    path: "donorId",
+                    select: "name organizationName phone city",
+                })
+                .sort({
+                    createdAt: -1,
+                })
+                .limit(5)
+                .lean(),
         ]);
+
+        const acceptedPickups = acceptedPickupRequests.length;
+
+        const todayPickups = acceptedPickupRequests.filter((request) => {
+            const pickupTime = request.donationId?.pickupTime;
+
+            if (!pickupTime) {
+                return false;
+            }
+
+            const pickupDate = new Date(pickupTime);
+
+            return (
+                pickupDate >= startOfToday &&
+                pickupDate < endOfToday
+            );
+        }).length;
+
+        const formattedRecentDonations = recentDonations.map((donation) => ({
+            _id: donation._id,
+            foodName: donation.foodName,
+            category: donation.category,
+            quantity: donation.quantity,
+            remainingQuantity: donation.remainingQuantity ?? 0,
+            preparedAt: donation.preparedAt,
+            expiryAt: donation.expiryAt,
+            pickupAddress: donation.pickupAddress,
+            pickupTime: donation.pickupTime,
+            status: donation.status,
+            donor: {
+                _id: donation.donorId?._id || null,
+                organizationName:
+                    donation.donorId?.organizationName ||
+                    donation.donorId?.name ||
+                    "Unknown",
+                city: donation.donorId?.city || "Unknown",
+                phone: donation.donorId?.phone || "Unknown",
+            },
+        }));
 
         const formattedRecentRequests = recentRequests.map((request) => ({
             _id: request._id,
             requestedQuantity: request.requestedQuantity,
-            fulfilledQuantity: request.fulfilledQuantity || 0,
+            fulfilledQuantity:
+                request.fulfilledQuantity > 0
+                    ? request.fulfilledQuantity
+                    : null,
             status: request.status,
             pickupConfirmed: request.pickupConfirmed || false,
             requestedAt: request.requestedAt,
@@ -459,9 +541,12 @@ export const getNGODashboardStats = async (req, res) => {
                 totalRequests,
                 pendingRequests,
                 acceptedRequests,
+                acceptedPickups,
                 completedPickups,
+                todayPickups,
                 availableDonations,
             },
+            recentDonations: formattedRecentDonations,
             recentRequests: formattedRecentRequests,
         });
     } catch (error) {
@@ -499,7 +584,12 @@ export const createDonationRequest = async (req, res) => {
             });
         }
 
-        if (!requestedQuantity || !requestedQuantity.trim()) {
+        // Validate requested quantity
+        if (
+            requestedQuantity === undefined ||
+            requestedQuantity === null ||
+            String(requestedQuantity).trim() === ""
+        ) {
             return res.status(400).json({
                 success: false,
                 message: "Requested quantity is required.",
@@ -525,6 +615,7 @@ export const createDonationRequest = async (req, res) => {
 
         // Parse and validate requested quantity against the remaining available quantity
         const requestedQuantityInt = parseInt(requestedQuantity, 10);
+
         if (isNaN(requestedQuantityInt) || requestedQuantityInt <= 0) {
             return res.status(400).json({
                 success: false,
@@ -532,7 +623,10 @@ export const createDonationRequest = async (req, res) => {
             });
         }
 
-        const availableQuantity = donation.remainingQuantity ?? (parseInt(donation.quantity, 10) || 0);
+        const availableQuantity =
+            donation.remainingQuantity ??
+            (parseInt(donation.quantity, 10) || 0);
+
         if (requestedQuantityInt > availableQuantity) {
             return res.status(400).json({
                 success: false,
@@ -559,12 +653,19 @@ export const createDonationRequest = async (req, res) => {
             donationId,
             donorId: donation.donorId,
             ngoId,
-            requestedQuantity: requestedQuantity.trim(),
-            message: message?.trim() || "",
+
+            // Convert number to string because the schema expects String
+            requestedQuantity: String(requestedQuantityInt),
+
+            message:
+                typeof message === "string"
+                    ? message.trim()
+                    : "",
+
             status: "pending",
         });
 
-        // Update donation status to 'requested' (keeps it visible while remaining > 0)
+        // Update donation status to 'requested'
         if (donation.status === "available") {
             await FoodDonation.findByIdAndUpdate(
                 donationId,
@@ -592,6 +693,7 @@ export const createDonationRequest = async (req, res) => {
         });
     } catch (error) {
         console.error("Error in createDonationRequest:", error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error. Failed to create donation request.",

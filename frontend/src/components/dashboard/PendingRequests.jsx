@@ -5,6 +5,7 @@ export default function PendingRequests({
     requests,
     formatDate,
     onViewAll,
+    onViewRequest,
 }) {
     return (
         <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -72,6 +73,7 @@ export default function PendingRequests({
                                     </span>
                                     <button
                                         type="button"
+                                        onClick={() => onViewRequest(request._id)}
                                         className="rounded-lg p-2 hover:bg-gray-100"
                                     >
                                         <ChevronRight
